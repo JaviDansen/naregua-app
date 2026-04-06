@@ -1,0 +1,24 @@
+{
+  "name": "projeto-barbearia",
+  "version": "1.0.0",
+  "description": "Uma aplicação web completa para gerenciamento de agendamentos em barbearias e salões, desenvolvida com React, Node.js e PostgreSQL.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JaviDansen/projeto-barbearia.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JaviDansen/projeto-barbearia/issues"
+  },
+  "homepage": "https://github.com/JaviDansen/projeto-barbearia#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
