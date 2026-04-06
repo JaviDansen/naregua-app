@@ -20,13 +20,27 @@ app.get('/', (req, res) => {
   res.send('API Barbearia rodando 🚀');
 });
 
-app.post('/register', (req, res) => {
+//Register
+app.post('/register', async (req, res) => {
   const { nome, email, senha } = req.body;
 
-  res.json({
-    mensagem: 'Usuário cadastrado com sucesso',
-    usuario: { nome, email }
-  });
+  try {
+    const result = await pool.query(
+      'INSERT INTO users (nome, email, senha) VALUES ($1, $2, $3) RETURNING *',
+      [nome, email, senha]
+    );
+
+    res.json({
+      mensagem: 'Usuário cadastrado com sucesso',
+      usuario: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      erro: 'Erro ao cadastrar usuário'
+    });
+  }
 });
 
 // Servidor
