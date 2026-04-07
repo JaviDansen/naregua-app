@@ -11,3 +11,11 @@ CREATE TABLE servicos (
     preco DECIMAL(10,2) NOT NULL,
     duracao INT NOT NULL
 );
+
+CREATE TABLE funcionarios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    especialidade VARCHAR(100),
+    telefone VARCHAR(20),
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
