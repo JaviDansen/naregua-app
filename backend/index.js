@@ -35,9 +35,9 @@ app.post('/register', async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error('Erro no /register:', error.message);
     res.status(500).json({
-      erro: 'Erro ao cadastrar usuário'
+      erro: error.message
     });
   }
 });
@@ -45,13 +45,23 @@ app.post('/register', async (req, res) => {
 app.get('/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM usuarios');
-
     res.json(result.rows);
-
   } catch (error) {
-    console.error(error);
+    console.error('Erro no /users:', error.message);
     res.status(500).json({
-      erro: 'Erro ao buscar usuários'
+      erro: error.message
+    });
+  }
+});
+
+app.get('/services', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM servicos');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Erro no /services:', error.message);
+    res.status(500).json({
+      erro: 'Erro ao buscar serviços'
     });
   }
 });
