@@ -193,6 +193,39 @@ app.post('/agendamentos', async (req, res) => {
   }
 });
 
+app.get('/agendamentos', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        a.id,
+        u.nome AS usuario,
+        s.nome AS servico,
+        f.nome AS funcionario,
+        TO_CHAR(
+          a.data_hora AT TIME ZONE 'America/Sao_Paulo',
+          'DD/MM/YYYY HH24:MI'
+        ) AS data_hora,
+        a.status,
+        TO_CHAR(
+          a.criado_em AT TIME ZONE 'America/Sao_Paulo',
+          'DD/MM/YYYY HH24:MI'
+        ) AS criado_em
+      FROM agendamentos a
+      INNER JOIN usuarios u ON a.usuario_id = u.id
+      INNER JOIN servicos s ON a.servico_id = s.id
+      INNER JOIN funcionarios f ON a.funcionario_id = f.id
+      ORDER BY a.data_hora ASC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Erro no /agendamentos:', error.message);
+    res.status(500).json({
+      erro: 'Erro ao buscar agendamentos'
+    });
+  }
+});
+
 // Servidor
 app.listen(3000, () => {
   console.log('Servidor rodando em http://localhost:3000');
