@@ -124,6 +124,38 @@ app.get('/funcionarios', async (req, res) => {
   }
 });
 
+app.post('/funcionarios', async (req, res) => {
+  const { nome, especialidade, telefone } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO funcionarios (nome, especialidade, telefone)
+       VALUES ($1, $2, $3)
+       RETURNING 
+         id,
+         nome,
+         especialidade,
+         telefone,
+         TO_CHAR(
+           criado_em AT TIME ZONE 'America/Sao_Paulo',
+           'DD/MM/YYYY HH24:MI'
+         ) AS criado_em`,
+      [nome, especialidade, telefone]
+    );
+
+    res.json({
+      mensagem: 'Funcionário criado com sucesso',
+      funcionario: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Erro no /funcionarios:', error.message);
+    res.status(500).json({
+      erro: 'Erro ao criar funcionário'
+    });
+  }
+});
+
 // Servidor
 app.listen(3000, () => {
   console.log('Servidor rodando em http://localhost:3000');
