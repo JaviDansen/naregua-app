@@ -343,4 +343,35 @@ router.put('/appointments/:id', auth, async (req, res) => {
   }
 });
 
+router.get('/my-appointments', auth, async (req, res) => {
+  const usuario_id = req.usuario.id;
+
+  try {
+    const result = await pool.query(
+      `SELECT
+         a.id,
+         s.nome AS servico,
+         f.nome AS funcionario,
+         TO_CHAR(
+           a.data_hora AT TIME ZONE 'America/Sao_Paulo',
+           'DD/MM/YYYY HH24:MI'
+         ) AS data_hora,
+         a.status
+       FROM agendamentos a
+       INNER JOIN servicos s ON a.servico_id = s.id
+       INNER JOIN funcionarios f ON a.funcionario_id = f.id
+       WHERE a.usuario_id = $1
+       ORDER BY a.data_hora ASC`,
+      [usuario_id]
+    );
+
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Erro no GET /my-appointments:', error.message);
+    return res.status(500).json({
+      erro: 'Erro ao buscar seus agendamentos'
+    });
+  }
+});
+
 module.exports = router;
