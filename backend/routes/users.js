@@ -50,6 +50,59 @@ router.post('/register', async (req, res) => {
   }
 });
 
+router.post('/login', async (req, res) => {
+  const { email, senha } = req.body;
+
+  try {
+    // validar campos
+    if (!email || !senha) {
+      return res.status(400).json({
+        erro: 'email e senha são obrigatórios'
+      });
+    }
+
+    // buscar usuário
+    const result = await pool.query(
+      `SELECT id, nome, email, senha
+       FROM usuarios
+       WHERE email = $1`,
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        erro: 'Email ou senha inválidos'
+      });
+    }
+
+    const usuario = result.rows[0];
+
+    // comparar senha
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
+    if (!senhaValida) {
+      return res.status(401).json({
+        erro: 'Email ou senha inválidos'
+      });
+    }
+
+    return res.status(200).json({
+      mensagem: 'Login realizado com sucesso',
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro no POST /login:', error.message);
+    return res.status(500).json({
+      erro: 'Erro ao realizar login'
+    });
+  }
+});
+
 router.get('/users', async (req, res) => {
   try {
     const result = await pool.query(
