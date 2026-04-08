@@ -160,6 +160,85 @@ app.post('/appointments', async (req, res) => {
   const { usuario_id, servico_id, funcionario_id, data_hora } = req.body;
 
   try {
+    // 1. validar campos obrigatórios
+    if (
+      usuario_id == null ||
+      servico_id == null ||
+      funcionario_id == null ||
+      !data_hora
+    ) {
+      return res.status(400).json({
+        erro: 'usuario_id, servico_id, funcionario_id e data_hora são obrigatórios'
+      });
+    }
+
+    // 2. validar data_hora
+    if (isNaN(Date.parse(data_hora))) {
+      return res.status(400).json({
+        erro: 'data_hora inválida'
+      });
+    }
+
+    // 3. impedir agendamento no passado
+    if (new Date(data_hora) < new Date()) {
+      return res.status(400).json({
+        erro: 'Não é possível criar agendamento em data/hora passada'
+      });
+    }
+
+    // 4. validar se usuário existe
+    const usuarioExiste = await pool.query(
+      `SELECT id FROM usuarios WHERE id = $1`,
+      [usuario_id]
+    );
+
+    if (usuarioExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Usuário não encontrado'
+      });
+    }
+
+    // 5. validar se serviço existe
+    const servicoExiste = await pool.query(
+      `SELECT id FROM servicos WHERE id = $1`,
+      [servico_id]
+    );
+
+    if (servicoExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Serviço não encontrado'
+      });
+    }
+
+    // 6. validar se funcionário existe
+    const funcionarioExiste = await pool.query(
+      `SELECT id FROM funcionarios WHERE id = $1`,
+      [funcionario_id]
+    );
+
+    if (funcionarioExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Funcionário não encontrado'
+      });
+    }
+
+    // 7. verificar conflito de horário
+    const conflitoHorario = await pool.query(
+      `SELECT id
+       FROM agendamentos
+       WHERE funcionario_id = $1
+         AND data_hora = $2
+         AND status != 'cancelado'`,
+      [funcionario_id, data_hora]
+    );
+
+    if (conflitoHorario.rows.length > 0) {
+      return res.status(409).json({
+        erro: 'Já existe um agendamento para esse funcionário nesse horário'
+      });
+    }
+
+    // 8. criar agendamento
     const result = await pool.query(
       `INSERT INTO agendamentos (usuario_id, servico_id, funcionario_id, data_hora)
        VALUES ($1, $2, $3, $4)
@@ -180,14 +259,13 @@ app.post('/appointments', async (req, res) => {
       [usuario_id, servico_id, funcionario_id, data_hora]
     );
 
-    res.json({
+    return res.status(201).json({
       mensagem: 'Agendamento criado com sucesso',
       agendamento: result.rows[0]
     });
-
   } catch (error) {
-    console.error('Erro no /agendamentos:', error.message);
-    res.status(500).json({
+    console.error('Erro no POST /appointments:', error.message);
+    return res.status(500).json({
       erro: 'Erro ao criar agendamento'
     });
   }
