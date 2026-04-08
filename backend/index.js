@@ -100,7 +100,7 @@ app.post('/services', async (req, res) => {
   }
 });
 
-app.get('/funcionarios', async (req, res) => {
+app.get('/employees', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
@@ -124,7 +124,7 @@ app.get('/funcionarios', async (req, res) => {
   }
 });
 
-app.post('/funcionarios', async (req, res) => {
+app.post('/employees', async (req, res) => {
   const { nome, especialidade, telefone } = req.body;
 
   try {
@@ -156,7 +156,7 @@ app.post('/funcionarios', async (req, res) => {
   }
 });
 
-app.post('/agendamentos', async (req, res) => {
+app.post('/appointments', async (req, res) => {
   const { usuario_id, servico_id, funcionario_id, data_hora } = req.body;
 
   try {
@@ -193,7 +193,7 @@ app.post('/agendamentos', async (req, res) => {
   }
 });
 
-app.get('/agendamentos', async (req, res) => {
+app.get('/appointments', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
