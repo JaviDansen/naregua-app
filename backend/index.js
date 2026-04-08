@@ -262,6 +262,88 @@ app.put('/appointments/:id', async (req, res) => {
   const { usuario_id, servico_id, funcionario_id, data_hora } = req.body;
 
   try {
+    // 1. validar campos obrigatórios
+    if (!usuario_id || !servico_id || !funcionario_id || !data_hora) {
+      return res.status(400).json({
+        erro: 'usuario_id, servico_id, funcionario_id e data_hora são obrigatórios'
+      });
+    }
+
+    // 2. verificar se o agendamento existe
+    const agendamentoExistente = await pool.query(
+      `SELECT id, status
+       FROM agendamentos
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (agendamentoExistente.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Agendamento não encontrado'
+      });
+    }
+
+    // 3. impedir edição de cancelado
+    if (agendamentoExistente.rows[0].status === 'cancelado') {
+      return res.status(400).json({
+        erro: 'Não é possível editar um agendamento cancelado'
+      });
+    }
+
+    // 4. validar se usuário existe
+    const usuarioExiste = await pool.query(
+      `SELECT id FROM usuarios WHERE id = $1`,
+      [usuario_id]
+    );
+
+    if (usuarioExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Usuário não encontrado'
+      });
+    }
+
+    // 5. validar se serviço existe
+    const servicoExiste = await pool.query(
+      `SELECT id FROM servicos WHERE id = $1`,
+      [servico_id]
+    );
+
+    if (servicoExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Serviço não encontrado'
+      });
+    }
+
+    // 6. validar se funcionário existe
+    const funcionarioExiste = await pool.query(
+      `SELECT id FROM funcionarios WHERE id = $1`,
+      [funcionario_id]
+    );
+
+    if (funcionarioExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Funcionário não encontrado'
+      });
+    }
+
+    // 7. verificar conflito de horário, ignorando o próprio agendamento
+    const conflitoHorario = await pool.query(
+      `SELECT id
+       FROM agendamentos
+       WHERE funcionario_id = $1
+         AND data_hora = $2
+         AND status != 'cancelado'
+         AND id != $3`,
+      [funcionario_id, data_hora, id]
+    );
+
+    if (conflitoHorario.rows.length > 0) {
+      return res.status(409).json({
+        erro: 'Já existe um agendamento para esse funcionário nesse horário'
+      });
+    }
+
+    // 8. atualizar
     const result = await pool.query(
       `UPDATE agendamentos
        SET usuario_id = $1,
@@ -286,13 +368,13 @@ app.put('/appointments/:id', async (req, res) => {
       [usuario_id, servico_id, funcionario_id, data_hora, id]
     );
 
-    res.json({
+    return res.status(200).json({
       mensagem: 'Agendamento atualizado com sucesso',
       agendamento: result.rows[0]
     });
   } catch (error) {
     console.error('Erro no PUT /appointments/:id:', error.message);
-    res.status(500).json({
+    return res.status(500).json({
       erro: 'Erro ao atualizar agendamento'
     });
   }
