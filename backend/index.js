@@ -226,7 +226,7 @@ app.get('/appointments', async (req, res) => {
   }
 });
 
-app.put('/appointments/:id', async (req, res) => {
+app.put('/appointments/:id/cancel', async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -253,6 +253,47 @@ app.put('/appointments/:id', async (req, res) => {
     console.error('Erro no cancelamento:', error.message);
     res.status(500).json({
       erro: 'Erro ao cancelar agendamento'
+    });
+  }
+});
+
+app.put('/appointments/:id', async (req, res) => {
+  const { id } = req.params;
+  const { usuario_id, servico_id, funcionario_id, data_hora } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE agendamentos
+       SET usuario_id = $1,
+           servico_id = $2,
+           funcionario_id = $3,
+           data_hora = $4
+       WHERE id = $5
+       RETURNING
+         id,
+         usuario_id,
+         servico_id,
+         funcionario_id,
+         TO_CHAR(
+           data_hora AT TIME ZONE 'America/Sao_Paulo',
+           'DD/MM/YYYY HH24:MI'
+         ) AS data_hora,
+         status,
+         TO_CHAR(
+           criado_em AT TIME ZONE 'America/Sao_Paulo',
+           'DD/MM/YYYY HH24:MI'
+         ) AS criado_em`,
+      [usuario_id, servico_id, funcionario_id, data_hora, id]
+    );
+
+    res.json({
+      mensagem: 'Agendamento atualizado com sucesso',
+      agendamento: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Erro no PUT /appointments/:id:', error.message);
+    res.status(500).json({
+      erro: 'Erro ao atualizar agendamento'
     });
   }
 });
