@@ -5,7 +5,7 @@ const pool = require('../db');
 const bcrypt = require('bcrypt');
 
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = 'barbearia_api_chave_secreta';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 router.post('/register', async (req, res) => {
   const { nome, email, senha } = req.body;

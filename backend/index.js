@@ -1,35 +1,22 @@
-const express = require('express');
-const app = express();
+require('dotenv').config();
 
+console.log('JWT_SECRET carregado?', !!process.env.JWT_SECRET);
+console.log('DATABASE_URL carregada?', !!process.env.DATABASE_URL);
+
+const app = require('./app');
 const pool = require('./db');
 
-const usersRoutes = require('./routes/users');
-const servicesRoutes = require('./routes/services');
-const employeesRoutes = require('./routes/employees');
-const appointmentsRoutes = require('./routes/appointments');
-
-// Middleware
-app.use(express.json());
-app.use(usersRoutes);
-app.use(servicesRoutes);
-app.use(employeesRoutes);
-app.use(appointmentsRoutes);
-
-// Teste de conexão com o banco
-pool.query(`SELECT TO_CHAR(NOW() AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS agora`, (err, result) => {
-  if (err) {
-    console.error('Erro ao conectar no banco:', err);
-  } else {
-    console.log('Banco conectado em:', result.rows[0].agora);
+pool.query(
+  `SELECT TO_CHAR(NOW() AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS agora`,
+  (err, result) => {
+    if (err) {
+      console.error('Erro ao conectar no banco:', err);
+    } else {
+      console.log('Banco conectado em:', result.rows[0].agora);
+    }
   }
-});
+);
 
-// Rotas
-app.get('/', (req, res) => {
-  res.send('API Barbearia rodando 🚀');
-});
-
-// Servidor
 app.listen(3000, () => {
   console.log('Servidor rodando em http://localhost:3000');
 });
