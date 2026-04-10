@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const pool = require('../db');
+const auth = require('../middlewares/auth');
 
 router.get('/employees', async (req, res) => {
   try {
@@ -27,7 +28,7 @@ router.get('/employees', async (req, res) => {
   }
 });
 
-router.post('/employees', async (req, res) => {
+router.post('/employees', auth, async (req, res) => {
   const { nome, especialidade, telefone } = req.body;
 
   try {

@@ -17,7 +17,7 @@ router.post('/appointments', auth, async (req, res) => {
       !data_hora
     ) {
       return res.status(400).json({
-        erro: 'usuario_id, servico_id, funcionario_id e data_hora são obrigatórios'
+        erro: 'servico_id, funcionario_id e data_hora são obrigatórios'
       });
     }
 
@@ -228,7 +228,7 @@ router.put('/appointments/:id', auth, async (req, res) => {
     // 1. validar campos obrigatórios
     if (!usuario_id || !servico_id || !funcionario_id || !data_hora) {
       return res.status(400).json({
-        erro: 'usuario_id, servico_id, funcionario_id e data_hora são obrigatórios'
+        erro: 'servico_id, funcionario_id e data_hora são obrigatórios'
       });
     }
 

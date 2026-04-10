@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const pool = require('../db');
+const auth = require('../middlewares/auth');
 
 router.get('/services', async (req, res) => {
   try {
@@ -19,7 +20,7 @@ router.get('/services', async (req, res) => {
   }
 });
 
-router.post('/services', async (req, res) => {
+router.post('/services', auth, async (req, res) => {
   const { nome, preco, duracao } = req.body;
 
   try {
