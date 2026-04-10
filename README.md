@@ -14,10 +14,22 @@ Uma aplicação web completa para gerenciamento de agendamentos em barbearias e 
 
 ## 🛠️ Tecnologias
 
-- **Frontend**: React
+- **Frontend**: React + Vite + TailwindCSS
 - **Backend**: Node.js + Express
 - **Banco de Dados**: PostgreSQL
 - **Controle de Versão**: Git e GitHub
+
+## 🚀 Como executar
+
+### Backend
+1. Instalar dependências: `npm install`
+2. Configurar `.env` com `DATABASE_URL` e `JWT_SECRET`
+3. Executar: `npm start`
+
+### Frontend
+1. Entrar na pasta `frontend/`
+2. Instalar dependências: `npm install`
+3. Executar: `npm run dev`
 
 ## 🚀 Objetivo
 
