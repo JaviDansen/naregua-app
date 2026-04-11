@@ -11,7 +11,9 @@ router.get('/services', async (req, res) => {
        FROM servicos`
     );
 
-    return res.json(result.rows);
+    return res.status(200).json({
+      dados: result.rows
+    });
   } catch (error) {
     console.error('Erro no GET /services:', error.message);
     return res.status(500).json({
@@ -31,9 +33,9 @@ router.post('/services', auth, async (req, res) => {
       [nome, preco, duracao]
     );
 
-    return res.json({
+    return res.status(201).json({
       mensagem: 'Serviço criado com sucesso',
-      servico: result.rows[0]
+      dados: result.rows[0]
     });
   } catch (error) {
     console.error('Erro no POST /services:', error.message);

@@ -10,32 +10,24 @@ router.post('/appointments', auth, async (req, res) => {
   const usuario_id = req.usuario.id;
 
   try {
-    // 1. validar campos obrigatórios
-    if (
-      servico_id == null ||
-      funcionario_id == null ||
-      !data_hora
-    ) {
+    if (servico_id == null || funcionario_id == null || !data_hora) {
       return res.status(400).json({
         erro: 'servico_id, funcionario_id e data_hora são obrigatórios'
       });
     }
 
-    // 2. validar data_hora
     if (isNaN(Date.parse(data_hora))) {
       return res.status(400).json({
         erro: 'data_hora inválida'
       });
     }
 
-    // 3. impedir agendamento no passado
     if (new Date(data_hora) < new Date()) {
       return res.status(400).json({
         erro: 'Não é possível criar agendamento em data/hora passada'
       });
     }
 
-    // 4. validar se usuário existe
     const usuarioExiste = await pool.query(
       `SELECT id FROM usuarios WHERE id = $1`,
       [usuario_id]
@@ -47,7 +39,6 @@ router.post('/appointments', auth, async (req, res) => {
       });
     }
 
-    // 5. validar se serviço existe
     const servicoExiste = await pool.query(
       `SELECT id FROM servicos WHERE id = $1`,
       [servico_id]
@@ -59,7 +50,6 @@ router.post('/appointments', auth, async (req, res) => {
       });
     }
 
-    // 6. validar se funcionário existe
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
       [funcionario_id]
@@ -71,7 +61,6 @@ router.post('/appointments', auth, async (req, res) => {
       });
     }
 
-    // 7. verificar conflito de horário
     const conflitoHorario = await pool.query(
       `SELECT id
        FROM agendamentos
@@ -87,7 +76,6 @@ router.post('/appointments', auth, async (req, res) => {
       });
     }
 
-    // 8. criar agendamento
     const result = await pool.query(
       `INSERT INTO agendamentos (usuario_id, servico_id, funcionario_id, data_hora)
        VALUES ($1, $2, $3, $4)
@@ -110,7 +98,7 @@ router.post('/appointments', auth, async (req, res) => {
 
     return res.status(201).json({
       mensagem: 'Agendamento criado com sucesso',
-      agendamento: result.rows[0]
+      dados: result.rows[0]
     });
   } catch (error) {
     console.error('Erro no POST /appointments:', error.message);
@@ -145,7 +133,9 @@ router.get('/appointments', auth, async (req, res) => {
       ORDER BY a.data_hora ASC
     `);
 
-    return res.json(result.rows);
+    return res.status(200).json({
+      dados: result.rows
+    });
   } catch (error) {
     console.error('Erro no GET /appointments:', error.message);
     return res.status(500).json({
@@ -159,14 +149,12 @@ router.put('/appointments/:id/cancel', auth, async (req, res) => {
   const { id } = req.params;
 
   try {
-    // 1. validar id
     if (isNaN(Number(id))) {
       return res.status(400).json({
         erro: 'ID inválido'
       });
     }
 
-    // 2. verificar se o agendamento existe
     const agendamentoExistente = await pool.query(
       `SELECT id, status
        FROM agendamentos
@@ -180,14 +168,12 @@ router.put('/appointments/:id/cancel', auth, async (req, res) => {
       });
     }
 
-    // 3. verificar se já está cancelado
     if (agendamentoExistente.rows[0].status === 'cancelado') {
       return res.status(400).json({
         erro: 'Esse agendamento já está cancelado'
       });
     }
 
-    // 4. cancelar
     const result = await pool.query(
       `UPDATE agendamentos
        SET status = 'cancelado'
@@ -208,7 +194,7 @@ router.put('/appointments/:id/cancel', auth, async (req, res) => {
 
     return res.status(200).json({
       mensagem: 'Agendamento cancelado com sucesso',
-      agendamento: result.rows[0]
+      dados: result.rows[0]
     });
   } catch (error) {
     console.error('Erro no PUT /appointments/:id/cancel:', error.message);
@@ -225,14 +211,12 @@ router.put('/appointments/:id', auth, async (req, res) => {
   const usuario_id = req.usuario.id;
 
   try {
-    // 1. validar campos obrigatórios
     if (!usuario_id || !servico_id || !funcionario_id || !data_hora) {
       return res.status(400).json({
         erro: 'servico_id, funcionario_id e data_hora são obrigatórios'
       });
     }
 
-    // 2. verificar se o agendamento existe
     const agendamentoExistente = await pool.query(
       `SELECT id, status
        FROM agendamentos
@@ -246,14 +230,12 @@ router.put('/appointments/:id', auth, async (req, res) => {
       });
     }
 
-    // 3. impedir edição de cancelado
     if (agendamentoExistente.rows[0].status === 'cancelado') {
       return res.status(400).json({
         erro: 'Não é possível editar um agendamento cancelado'
       });
     }
 
-    // 4. validar se usuário existe
     const usuarioExiste = await pool.query(
       `SELECT id FROM usuarios WHERE id = $1`,
       [usuario_id]
@@ -265,7 +247,6 @@ router.put('/appointments/:id', auth, async (req, res) => {
       });
     }
 
-    // 5. validar se serviço existe
     const servicoExiste = await pool.query(
       `SELECT id FROM servicos WHERE id = $1`,
       [servico_id]
@@ -277,7 +258,6 @@ router.put('/appointments/:id', auth, async (req, res) => {
       });
     }
 
-    // 6. validar se funcionário existe
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
       [funcionario_id]
@@ -289,7 +269,6 @@ router.put('/appointments/:id', auth, async (req, res) => {
       });
     }
 
-    // 7. verificar conflito de horário, ignorando o próprio agendamento
     const conflitoHorario = await pool.query(
       `SELECT id
        FROM agendamentos
@@ -306,7 +285,6 @@ router.put('/appointments/:id', auth, async (req, res) => {
       });
     }
 
-    // 8. atualizar
     const result = await pool.query(
       `UPDATE agendamentos
        SET usuario_id = $1,
@@ -333,7 +311,7 @@ router.put('/appointments/:id', auth, async (req, res) => {
 
     return res.status(200).json({
       mensagem: 'Agendamento atualizado com sucesso',
-      agendamento: result.rows[0]
+      dados: result.rows[0]
     });
   } catch (error) {
     console.error('Erro no PUT /appointments/:id:', error.message);
@@ -366,7 +344,9 @@ router.get('/my-appointments', auth, async (req, res) => {
       [usuario_id]
     );
 
-    return res.status(200).json(result.rows);
+    return res.status(200).json({
+      dados: result.rows
+    });
   } catch (error) {
     console.error('Erro no GET /my-appointments:', error.message);
     return res.status(500).json({
@@ -380,28 +360,24 @@ router.get('/availability', auth, async (req, res) => {
   const { funcionario_id, data } = req.query;
 
   try {
-    // 1. validar campos obrigatórios
     if (!funcionario_id || !data) {
       return res.status(400).json({
         erro: 'funcionario_id e data são obrigatórios'
       });
     }
 
-    // 2. validar funcionario_id
     if (isNaN(Number(funcionario_id))) {
       return res.status(400).json({
         erro: 'funcionario_id inválido'
       });
     }
 
-    // 3. validar data
     if (isNaN(Date.parse(data))) {
       return res.status(400).json({
         erro: 'data inválida'
       });
     }
 
-    // 4. verificar se funcionário existe
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
       [funcionario_id]
@@ -413,7 +389,6 @@ router.get('/availability', auth, async (req, res) => {
       });
     }
 
-    // 5. buscar horários ocupados no dia
     const result = await pool.query(
       `SELECT
          TO_CHAR(
@@ -428,12 +403,14 @@ router.get('/availability', auth, async (req, res) => {
       [funcionario_id, data]
     );
 
-    const horarios_ocupados = result.rows.map(item => item.horario);
+    const horarios_ocupados = result.rows.map((item) => item.horario);
 
     return res.status(200).json({
-      funcionario_id: Number(funcionario_id),
-      data,
-      horarios_ocupados
+      dados: {
+        funcionario_id: Number(funcionario_id),
+        data,
+        horarios_ocupados
+      }
     });
   } catch (error) {
     console.error('Erro no GET /availability:', error.message);

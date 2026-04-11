@@ -19,7 +19,9 @@ router.get('/employees', async (req, res) => {
       FROM funcionarios
     `);
 
-    return res.json(result.rows);
+    return res.status(200).json({
+      dados: result.rows
+    });
   } catch (error) {
     console.error('Erro no GET /employees:', error.message);
     return res.status(500).json({
@@ -47,9 +49,9 @@ router.post('/employees', auth, async (req, res) => {
       [nome, especialidade, telefone]
     );
 
-    return res.json({
+    return res.status(201).json({
       mensagem: 'Funcionário criado com sucesso',
-      funcionario: result.rows[0]
+      dados: result.rows[0]
     });
   } catch (error) {
     console.error('Erro no POST /employees:', error.message);

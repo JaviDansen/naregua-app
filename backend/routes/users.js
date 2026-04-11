@@ -39,13 +39,12 @@ router.post('/register', async (req, res) => {
 
     return res.status(201).json({
       mensagem: 'Usuário cadastrado com sucesso',
-      usuario: result.rows[0]
+      dados: result.rows[0]
     });
   } catch (error) {
     console.error('Erro no POST /register:', error);
     return res.status(500).json({
-      erro: 'Erro ao cadastrar usuário',
-      detalhe: error.message
+      erro: 'Erro ao cadastrar usuário'
     });
   }
 });
@@ -95,18 +94,19 @@ router.post('/login', async (req, res) => {
 
     return res.status(200).json({
       mensagem: 'Login realizado com sucesso',
-      token,
-      usuario: {
-        id: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email
+      dados: {
+        token,
+        usuario: {
+          id: usuario.id,
+          nome: usuario.nome,
+          email: usuario.email
+        }
       }
     });
   } catch (error) {
     console.error('Erro no POST /login:', error);
     return res.status(500).json({
-      erro: 'Erro ao realizar login',
-      detalhe: error.message
+      erro: 'Erro ao realizar login'
     });
   }
 });
@@ -118,7 +118,9 @@ router.get('/users', async (req, res) => {
        FROM usuarios`
     );
 
-    return res.json(result.rows);
+    return res.status(200).json({
+      dados: result.rows
+    });
   } catch (error) {
     console.error('Erro no GET /users:', error.message);
     return res.status(500).json({
