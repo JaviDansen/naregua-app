@@ -31,7 +31,26 @@ const Dashboard = () => {
       const dateA = parseBrazilianDateTime(a.data_hora);
       const dateB = parseBrazilianDateTime(b.data_hora);
       return dateA - dateB;
-  })[0];
+    })[0];
+
+  const sortedAppointments = appointments?.data
+    ? [...appointments.data].sort((a, b) => {
+        const isCanceledA = a.status === "cancelado";
+        const isCanceledB = b.status === "cancelado";
+
+        if (isCanceledA && !isCanceledB) return 1;
+        if (!isCanceledA && isCanceledB) return -1;
+
+        const dateA = parseBrazilianDateTime(a.data_hora);
+        const dateB = parseBrazilianDateTime(b.data_hora);
+
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+
+        return dateA - dateB;
+      })
+    : [];
 
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
@@ -66,9 +85,9 @@ const Dashboard = () => {
                 <Skeleton className="h-16" />
                 <Skeleton className="h-16" />
               </div>
-            ) : appointments?.data?.length > 0 ? (
+            ) : sortedAppointments.length > 0 ? (
               <div className="space-y-4">
-                {appointments.data.map((appt) => (
+                {sortedAppointments.map((appt) => (
                   <Card key={appt.id}>
                     <p>Serviço: {appt.servico}</p>
                     <p>Data: {appt.data_hora}</p>
