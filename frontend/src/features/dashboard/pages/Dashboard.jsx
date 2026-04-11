@@ -4,10 +4,34 @@ import Navbar from "../../../components/layout/Navbar";
 import MobileNav from "../../../components/layout/MobileNav";
 import Card from "../../../components/ui/Card";
 import Skeleton from "../../../components/ui/Skeleton";
-import { formatDate, formatTime } from "../../../utils/formatDate";
+
+const parseBrazilianDateTime = (dateTimeString) => {
+  if (!dateTimeString) return null;
+
+  const [datePart, timePart] = dateTimeString.split(" ");
+  if (!datePart || !timePart) return null;
+
+  const [day, month, year] = datePart.split("/");
+  const [hour, minute] = timePart.split(":");
+
+  return new Date(year, month - 1, day, hour, minute);
+};
 
 const Dashboard = () => {
   const { data: appointments, isLoading } = useMyAppointments();
+
+  const now = new Date();
+
+  const nextAppointment = appointments?.data
+    ?.filter((appt) => {
+      const apptDate = parseBrazilianDateTime(appt.data_hora);
+      return apptDate && apptDate > now && appt.status !== "cancelado";
+    })
+    ?.sort((a, b) => {
+      const dateA = parseBrazilianDateTime(a.data_hora);
+      const dateB = parseBrazilianDateTime(b.data_hora);
+      return dateA - dateB;
+  })[0];
 
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
@@ -17,25 +41,24 @@ const Dashboard = () => {
         <div className="p-6 pb-20 md:pb-6">
           <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-          {/* Próximo agendamento */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4">Próximo Agendamento</h2>
             {isLoading ? (
               <Skeleton className="h-24" />
-            ) : appointments && appointments.data.length > 0 ? (
+            ) : nextAppointment ? (
               <Card>
-                <p>Serviço: Corte de Cabelo</p>
-                <p>Data: {formatDate('2024-10-01')} às {formatTime('14:00')}</p>
-                <p>Funcionário: João Silva</p>
+                <p>Serviço: {nextAppointment.servico}</p>
+                <p>Data: {nextAppointment.data_hora}</p>
+                <p>Funcionário: {nextAppointment.funcionario}</p>
+                <p>Status: {nextAppointment.status}</p>
               </Card>
             ) : (
               <Card>
-                <p className="text-zinc-400">Nenhum agendamento encontrado</p>
+                <p className="text-zinc-400">Nenhum próximo agendamento encontrado</p>
               </Card>
             )}
           </div>
 
-          {/* Lista de agendamentos */}
           <div>
             <h2 className="text-xl font-semibold mb-4">Meus Agendamentos</h2>
             {isLoading ? (
@@ -43,12 +66,12 @@ const Dashboard = () => {
                 <Skeleton className="h-16" />
                 <Skeleton className="h-16" />
               </div>
-            ) : appointments && appointments.data.length > 0 ? (
+            ) : appointments?.data?.length > 0 ? (
               <div className="space-y-4">
                 {appointments.data.map((appt) => (
                   <Card key={appt.id}>
                     <p>Serviço: {appt.servico}</p>
-                    <p>Data: {formatDate(appt.data_hora)} às {formatTime(appt.data_hora)}</p>
+                    <p>Data: {appt.data_hora}</p>
                     <p>Funcionário: {appt.funcionario}</p>
                     <p>Status: {appt.status}</p>
                   </Card>
