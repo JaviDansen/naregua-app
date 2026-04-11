@@ -1,4 +1,11 @@
 import api from './axios';
 
-export const getEmployees = () => api.get('/employees');
-export const createEmployee = (data) => api.post('/employees', data);
+export const getEmployees = async () => {
+  const response = await api.get('/employees');
+  return response.data.dados;
+};
+
+export const createEmployee = async (data) => {
+  const response = await api.post('/employees', data);
+  return response.data.dados;
+};

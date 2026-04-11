@@ -19,37 +19,53 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+
     if (token) {
-      // TODO: Validate token with API
       setIsAuthenticated(true);
-      // setUser(decoded user);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
     }
   }, []);
 
   const login = async (email, senha) => {
     try {
-      const response = await apiLogin({ email, senha });
-      const { token, usuario } = response.data;
+      const data = await apiLogin({ email, senha });
+
+      const { token, usuario } = data;
+
       localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(usuario));
+
       setUser(usuario);
       setIsAuthenticated(true);
+
       return { success: true };
+
     } catch (error) {
-      return { success: false, error: error.response?.data?.erro || 'Erro no login' };
+      return {
+        success: false,
+        error: error.response?.data?.erro || 'Erro no login'
+      };
     }
   };
 
   const register = async (nome, email, senha) => {
     try {
-      const response = await apiRegister({ nome, email, senha });
+      await apiRegister({ nome, email, senha });
       return { success: true };
     } catch (error) {
-      return { success: false, error: error.response?.data?.erro || 'Erro no cadastro' };
+      return {
+        success: false,
+        error: error.response?.data?.erro || 'Erro no cadastro'
+      };
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -57,7 +73,14 @@ export const AuthProvider = ({ children }) => {
   const getUser = () => user;
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout, getUser }}>
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated,
+      login,
+      register,
+      logout,
+      getUser
+    }}>
       {children}
     </AuthContext.Provider>
   );
