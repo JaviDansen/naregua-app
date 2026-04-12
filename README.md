@@ -1,36 +1,67 @@
-# 💈 Sistema de Agendamento - Barbearia
+# 💈 Naregua App
 
-Uma aplicação web completa para gerenciamento de agendamentos em barbearias e salões, desenvolvida com React, Node.js e PostgreSQL.
-#Estive aqui. Prof. Rondineli
-## ✨ Funcionalidades
+Sistema de agendamento para barbearias desenvolvido como projeto acadêmico, com foco em boas práticas de arquitetura, API REST, autenticação e gerenciamento de horários.
 
-- 🔐 **Autenticação**: Sistema de login e cadastro de usuários
-- 📅 **Agendamentos**: Marcação, visualização e cancelamento de horários
-- ✂️ **Serviços**: Listagem de serviços oferecidos (corte, barba, etc.)
-- 👨‍🔧 **Profissionais**: Visualização dos funcionários disponíveis
-- 📊 **Dashboard**: Acompanhamento dos agendamentos
-- 📱 **Responsivo**: Interface adaptada para desktop e mobile
-- 💾 **Banco de Dados**: Armazenamento persistente com PostgreSQL
+O sistema permite gerenciar usuários, funcionários, serviços e agendamentos, com validações de disponibilidade e regras de funcionamento da barbearia.
 
-## 🛠️ Tecnologias
+---
 
-- **Frontend**: React + Vite + TailwindCSS
-- **Backend**: Node.js + Express
-- **Banco de Dados**: PostgreSQL
-- **Controle de Versão**: Git e GitHub
+# 🚀 Tecnologias
 
-## 🚀 Como executar
+## Backend
+- Node.js
+- Express
+- PostgreSQL (Neon)
+- JWT (Autenticação)
+- Bcrypt
 
-### Backend
-1. Instalar dependências: `npm install`
-2. Configurar `.env` com `DATABASE_URL` e `JWT_SECRET`
-3. Executar: `npm start`
+## Frontend
+- React
+- Vite
+- TailwindCSS
+- React Query
+- Axios
 
-### Frontend
-1. Entrar na pasta `frontend/`
-2. Instalar dependências: `npm install`
-3. Executar: `npm run dev`
+---
 
-## 🚀 Objetivo
+# 🌐 Deploy
 
-Projeto desenvolvido para a disciplina acadêmica, com foco na construção de uma aplicação completa envolvendo frontend, backend, API e banco de dados.
+Backend hospedado na Vercel:
+
+https://naregua-app.vercel.app
+
+Banco de dados:
+
+Neon PostgreSQL
+
+---
+
+# 🎯 Funcionalidades
+
+- Autenticação de usuários
+- Cadastro de serviços
+- Cadastro de funcionários
+- Criação de agendamentos
+- Cancelamento de agendamentos
+- Edição de agendamentos
+- Disponibilidade por funcionário
+- Horário de funcionamento da barbearia
+- Controle de conflitos de horário
+
+---
+
+# 📌 Objetivo do Projeto
+
+Projeto desenvolvido para disciplina acadêmica com foco em:
+
+- API REST
+- Autenticação JWT
+- PostgreSQL
+- Arquitetura Backend
+- Boas práticas de desenvolvimento
+
+---
+
+# 📌 Status do Projeto
+
+🚧 Em desenvolvimento
