@@ -4,6 +4,40 @@ const router = express.Router();
 const pool = require('../db');
 const auth = require('../middlewares/auth');
 
+function getDayOfWeekAndTimeInSaoPaulo(dataHora) {
+  const data = new Date(dataHora);
+
+  const formatterDia = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    weekday: 'short'
+  });
+
+  const formatterHora = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+
+  const diaTexto = formatterDia.format(data);
+  const horario = formatterHora.format(data);
+
+  const mapaDias = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6
+  };
+
+  return {
+    day_of_week: mapaDias[diaTexto],
+    horario
+  };
+}
+
 // Criar agendamento
 router.post('/appointments', auth, async (req, res) => {
   const { servico_id, funcionario_id, data_hora } = req.body;
@@ -25,6 +59,38 @@ router.post('/appointments', auth, async (req, res) => {
     if (new Date(data_hora) < new Date()) {
       return res.status(400).json({
         erro: 'Não é possível criar agendamento em data/hora passada'
+      });
+    }
+
+    const { day_of_week, horario } = getDayOfWeekAndTimeInSaoPaulo(data_hora);
+
+    const regraFuncionamento = await pool.query(
+      `SELECT day_of_week, open_time, close_time, is_closed
+       FROM business_hours
+       WHERE day_of_week = $1`,
+      [day_of_week]
+    );
+
+    if (regraFuncionamento.rows.length === 0) {
+      return res.status(500).json({
+        erro: 'Regra de funcionamento não cadastrada para esse dia'
+      });
+    }
+
+    const regraDia = regraFuncionamento.rows[0];
+
+    if (regraDia.is_closed) {
+      return res.status(400).json({
+        erro: 'Não é possível agendar em um dia em que a barbearia está fechada'
+      });
+    }
+
+    const openTime = regraDia.open_time.slice(0, 5);
+    const closeTime = regraDia.close_time.slice(0, 5);
+
+    if (horario < openTime || horario >= closeTime) {
+      return res.status(400).json({
+        erro: 'Horário fora do funcionamento da barbearia'
       });
     }
 
@@ -214,6 +280,56 @@ router.put('/appointments/:id', auth, async (req, res) => {
     if (!usuario_id || !servico_id || !funcionario_id || !data_hora) {
       return res.status(400).json({
         erro: 'servico_id, funcionario_id e data_hora são obrigatórios'
+      });
+    }
+
+    if (isNaN(Number(id))) {
+      return res.status(400).json({
+        erro: 'ID inválido'
+      });
+    }
+
+    if (isNaN(Date.parse(data_hora))) {
+      return res.status(400).json({
+        erro: 'data_hora inválida'
+      });
+    }
+
+    if (new Date(data_hora) < new Date()) {
+      return res.status(400).json({
+        erro: 'Não é possível editar agendamento para data/hora passada'
+      });
+    }
+
+    const { day_of_week, horario } = getDayOfWeekAndTimeInSaoPaulo(data_hora);
+
+    const regraFuncionamento = await pool.query(
+      `SELECT day_of_week, open_time, close_time, is_closed
+       FROM business_hours
+       WHERE day_of_week = $1`,
+      [day_of_week]
+    );
+
+    if (regraFuncionamento.rows.length === 0) {
+      return res.status(500).json({
+        erro: 'Regra de funcionamento não cadastrada para esse dia'
+      });
+    }
+
+    const regraDia = regraFuncionamento.rows[0];
+
+    if (regraDia.is_closed) {
+      return res.status(400).json({
+        erro: 'Não é possível agendar em um dia em que a barbearia está fechada'
+      });
+    }
+
+    const openTime = regraDia.open_time.slice(0, 5);
+    const closeTime = regraDia.close_time.slice(0, 5);
+
+    if (horario < openTime || horario >= closeTime) {
+      return res.status(400).json({
+        erro: 'Horário fora do funcionamento da barbearia'
       });
     }
 
