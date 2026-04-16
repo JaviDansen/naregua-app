@@ -43,9 +43,9 @@ const Services = () => {
                 <Skeleton key={i} className="h-32" />
               ))}
             </div>
-          ) : services && services.data.length > 0 ? (
+          ) : services && services.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {services.data.map((service) => (
+              {services.map((service) => (
                 <ServiceCard key={service.id} service={service} />
               ))}
             </div>

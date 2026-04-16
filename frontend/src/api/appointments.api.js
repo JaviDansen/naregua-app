@@ -10,7 +10,24 @@ export const getMyAppointments = async () => {
   return response.data.dados;
 };
 
+export const getAvailability = async ({ funcionario_id, data }) => {
+  const response = await api.get('/availability', {
+    params: { funcionario_id, data },
+  });
+  return response.data.dados;
+};
+
 export const createAppointment = async (data) => {
   const response = await api.post('/appointments', data);
+  return response.data.dados;
+};
+
+export const cancelAppointment = async (id) => {
+  const response = await api.put(`/appointments/${id}/cancel`);
+  return response.data.dados;
+};
+
+export const updateAppointment = async (id, data) => {
+  const response = await api.put(`/appointments/${id}`, data);
   return response.data.dados;
 };

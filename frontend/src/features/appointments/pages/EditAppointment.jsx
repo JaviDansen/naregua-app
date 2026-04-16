@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useServices, useEmployees, useCreateAppointment } from "../../../hooks/useApi";
-import Sidebar from "../../../components/layout/Sidebar";
-import Navbar from "../../../components/layout/Navbar";
-import MobileNav from "../../../components/layout/MobileNav";
-import Card from "../../../components/ui/Card";
-import Button from "../../../components/ui/Button";
-import Select from "../../../components/ui/Select";
-import Modal from "../../../components/ui/Modal";
+import { useParams, useNavigate } from 'react-router-dom';
+import { useServices, useEmployees, useAppointment, useUpdateAppointment } from '../../../hooks/useApi';
+import Sidebar from '../../../components/layout/Sidebar';
+import Navbar from '../../../components/layout/Navbar';
+import MobileNav from '../../../components/layout/MobileNav';
+import Card from '../../../components/ui/Card';
+import Button from '../../../components/ui/Button';
+import Select from '../../../components/ui/Select';
+import Modal from '../../../components/ui/Modal';
 import TimeSlotPicker from '../components/TimeSlotPicker';
 
-const NewAppointment = () => {
+const EditAppointment = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const { data: services } = useServices();
   const { data: employees } = useEmployees();
-  const createAppointmentMutation = useCreateAppointment();
+  const { data: appointment, isLoading: loadingAppointment } = useAppointment(id);
+  const updateAppointmentMutation = useUpdateAppointment();
 
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState('');
@@ -23,10 +25,20 @@ const NewAppointment = () => {
   const [selectedTime, setSelectedTime] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-  const serviceOptions = services?.data?.map(s => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
-  const employeeOptions = employees?.data?.map(e => ({ value: e.id, label: e.nome })) || [];
-
+  const serviceOptions = services?.data?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
+  const employeeOptions = employees?.data?.map((e) => ({ value: e.id, label: e.nome })) || [];
   const selectedServiceDuration = serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
+
+  useEffect(() => {
+    if (appointment) {
+      setSelectedService(appointment.servico_id || '');
+      setSelectedEmployee(appointment.funcionario_id || '');
+      if (appointment.data_hora_iso) {
+        setSelectedDate(appointment.data_hora_iso.slice(0, 10));
+        setSelectedTime(appointment.data_hora_iso.slice(11, 16));
+      }
+    }
+  }, [appointment]);
 
   useEffect(() => {
     setSelectedTime('');
@@ -42,10 +54,13 @@ const NewAppointment = () => {
 
   const handleConfirm = async () => {
     const data_hora = `${selectedDate}T${selectedTime}:00`;
-    await createAppointmentMutation.mutateAsync({
-      servico_id: selectedService,
-      funcionario_id: selectedEmployee,
-      data_hora,
+    await updateAppointmentMutation.mutateAsync({
+      id,
+      data: {
+        servico_id: selectedService,
+        funcionario_id: selectedEmployee,
+        data_hora,
+      },
     });
     navigate('/dashboard');
   };
@@ -65,13 +80,32 @@ const NewAppointment = () => {
     }
   };
 
+  if (loadingAppointment) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+        <div>Carregando agendamento...</div>
+      </div>
+    );
+  }
+
+  if (!appointment) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
+        <Card>
+          <p className="text-zinc-400">Agendamento não encontrado.</p>
+          <Button onClick={() => navigate('/dashboard')}>Voltar para o dashboard</Button>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
       <Sidebar />
       <div className="flex-1">
         <Navbar />
         <div className="p-6 pb-20 md:pb-6 max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6 text-center">Novo Agendamento</h1>
+          <h1 className="text-2xl font-bold mb-6 text-center">Editar Agendamento</h1>
 
           <Card>
             {step === 1 && (
@@ -142,7 +176,7 @@ const NewAppointment = () => {
                 </Button>
               ) : (
                 <Button onClick={() => setIsConfirmModalOpen(true)} disabled={!canProceed()}>
-                  Confirmar
+                  Salvar alterações
                 </Button>
               )}
             </div>
@@ -152,17 +186,17 @@ const NewAppointment = () => {
       </div>
 
       <Modal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)}>
-        <h2 className="text-xl font-bold mb-4">Confirmar Agendamento</h2>
-        <p>Serviço: {serviceOptions.find(s => s.value === selectedService)?.label}</p>
-        <p>Funcionário: {employeeOptions.find(e => e.value === selectedEmployee)?.label}</p>
+        <h2 className="text-xl font-bold mb-4">Confirmar Alterações</h2>
+        <p>Serviço: {serviceOptions.find((s) => s.value === selectedService)?.label}</p>
+        <p>Funcionário: {employeeOptions.find((e) => e.value === selectedEmployee)?.label}</p>
         <p>Data: {selectedDate}</p>
         <p>Hora: {selectedTime}</p>
         <div className="flex justify-between mt-6">
           <Button variant="secondary" onClick={() => setIsConfirmModalOpen(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleConfirm} loading={createAppointmentMutation.isPending}>
-            Confirmar
+          <Button onClick={handleConfirm} loading={updateAppointmentMutation.isPending}>
+            Salvar alterações
           </Button>
         </div>
       </Modal>
@@ -170,4 +204,4 @@ const NewAppointment = () => {
   );
 };
 
-export default NewAppointment;
+export default EditAppointment;

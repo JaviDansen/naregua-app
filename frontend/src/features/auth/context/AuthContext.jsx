@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { login as apiLogin, register as apiRegister } from "../../../api/auth.api";
+import { DEV_MODE } from '../../../config/devMode';
+import { mockUser, mockToken } from '../../../api/mocks/mockData';
 
 const AuthContext = createContext();
 
@@ -16,17 +18,34 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    const initializeAuth = async () => {
+      const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
 
-    if (token) {
-      setIsAuthenticated(true);
-      if (storedUser) {
+      if (token && storedUser) {
+        setIsAuthenticated(true);
         setUser(JSON.parse(storedUser));
+      } else if (DEV_MODE) {
+        // Auto-login in DEV_MODE
+        try {
+          await apiLogin({
+            email: 'admin@example.com',
+            senha: 'password123',
+          });
+          setIsAuthenticated(true);
+          setUser(mockUser);
+        } catch (error) {
+          console.error('Auto-login failed:', error);
+        }
       }
-    }
+
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email, senha) => {
@@ -68,6 +87,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
+    
+    // In DEV_MODE, optionally redirect or keep user in app
+    if (!DEV_MODE) {
+      window.location.href = '/login';
+    }
   };
 
   const getUser = () => user;
@@ -76,6 +100,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider value={{
       user,
       isAuthenticated,
+      isLoading,
       login,
       register,
       logout,

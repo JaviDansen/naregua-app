@@ -445,13 +445,16 @@ router.get('/my-appointments', auth, async (req, res) => {
     const result = await pool.query(
       `SELECT
          a.id,
+         a.servico_id,
+         a.funcionario_id,
          s.nome AS servico,
          f.nome AS funcionario,
          TO_CHAR(
            a.data_hora AT TIME ZONE 'America/Sao_Paulo',
            'DD/MM/YYYY HH24:MI'
          ) AS data_hora,
-         a.status
+         a.status,
+         a.data_hora AS data_hora_iso
        FROM agendamentos a
        INNER JOIN servicos s ON a.servico_id = s.id
        INNER JOIN funcionarios f ON a.funcionario_id = f.id

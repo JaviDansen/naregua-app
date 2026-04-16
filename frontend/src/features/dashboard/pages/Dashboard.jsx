@@ -1,9 +1,12 @@
-import { useMyAppointments } from "../../../hooks/useApi";
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useMyAppointments, useCancelAppointment } from "../../../hooks/useApi";
 import Sidebar from "../../../components/layout/Sidebar";
 import Navbar from "../../../components/layout/Navbar";
 import MobileNav from "../../../components/layout/MobileNav";
 import Card from "../../../components/ui/Card";
 import Skeleton from "../../../components/ui/Skeleton";
+import Button from "../../../components/ui/Button";
 
 const parseBrazilianDateTime = (dateTimeString) => {
   if (!dateTimeString) return null;
@@ -18,7 +21,10 @@ const parseBrazilianDateTime = (dateTimeString) => {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { data: appointments = [], isLoading } = useMyAppointments();
+  const cancelAppointmentMutation = useCancelAppointment();
+  const [selectedCancelId, setSelectedCancelId] = useState(null);
 
   const now = new Date();
 
@@ -49,6 +55,15 @@ const Dashboard = () => {
 
     return dateA - dateB;
   });
+
+  const handleCancel = async (id) => {
+    setSelectedCancelId(id);
+    try {
+      await cancelAppointmentMutation.mutateAsync(id);
+    } finally {
+      setSelectedCancelId(null);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
@@ -87,10 +102,29 @@ const Dashboard = () => {
               <div className="space-y-4">
                 {sortedAppointments.map((appt) => (
                   <Card key={appt.id}>
-                    <p>Serviço: {appt.servico}</p>
-                    <p>Data: {appt.data_hora}</p>
-                    <p>Funcionário: {appt.funcionario}</p>
-                    <p>Status: {appt.status}</p>
+                    <div className="flex flex-col gap-2">
+                      <p>Serviço: {appt.servico}</p>
+                      <p>Data: {appt.data_hora}</p>
+                      <p>Funcionário: {appt.funcionario}</p>
+                      <p>Status: {appt.status}</p>
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        <Button
+                          variant="secondary"
+                          onClick={() => navigate(`/appointments/${appt.id}/edit`)}
+                          disabled={appt.status === 'cancelado'}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          variant="danger"
+                          onClick={() => handleCancel(appt.id)}
+                          disabled={appt.status === 'cancelado' || cancelAppointmentMutation.isPending}
+                          loading={selectedCancelId === appt.id && cancelAppointmentMutation.isPending}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
                   </Card>
                 ))}
               </div>

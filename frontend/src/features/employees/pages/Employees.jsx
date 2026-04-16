@@ -42,9 +42,9 @@ const Employees = () => {
                 <Skeleton key={i} className="h-20" />
               ))}
             </div>
-          ) : employees && employees.data.length > 0 ? (
+          ) : employees && employees.length > 0 ? (
             <div className="space-y-4">
-              {employees.data.map((employee) => (
+              {employees.map((employee) => (
                 <Card key={employee.id}>
                   <h3 className="font-semibold">{employee.nome}</h3>
                   <p className="text-zinc-400">{employee.especialidade}</p>

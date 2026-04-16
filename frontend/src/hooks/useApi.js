@@ -1,7 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getServices, createService } from '../api/services.api';
 import { getEmployees, createEmployee } from '../api/employees.api';
-import { getAppointments, getMyAppointments, createAppointment } from '../api/appointments.api';
+import {
+  getAppointments,
+  getMyAppointments,
+  createAppointment,
+  getAvailability,
+  cancelAppointment,
+  updateAppointment,
+} from '../api/appointments.api';
 
 export const useServices = () => {
   return useQuery({
@@ -50,12 +57,52 @@ export const useCreateAppointment = () => {
     mutationFn: createAppointment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
     },
   });
 };
 
 export const useMyAppointments = () =>
   useQuery({
-    queryKey: ["myAppointments"],
+    queryKey: ['myAppointments'],
     queryFn: getMyAppointments,
   });
+
+export const useAppointment = (id) =>
+  useQuery({
+    queryKey: ['myAppointment', id],
+    queryFn: async () => {
+      const appointments = await getMyAppointments();
+      return appointments.find((appointment) => appointment.id === id);
+    },
+    enabled: !!id,
+  });
+
+export const useAvailability = ({ funcionarioId, date }) =>
+  useQuery({
+    queryKey: ['availability', funcionarioId, date],
+    queryFn: () => getAvailability({ funcionario_id: funcionarioId, data: date }),
+    enabled: !!funcionarioId && !!date,
+  });
+
+export const useCancelAppointment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: cancelAppointment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
+    },
+  });
+};
+
+export const useUpdateAppointment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => updateAppointment(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
+    },
+  });
+};

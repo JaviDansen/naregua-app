@@ -1,15 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
+import { useAvailability } from '../../../hooks/useApi';
 
-const TimeSlotPicker = ({ selectedTime, onSelectTime, date, employeeId }) => {
-  const [availableSlots, setAvailableSlots] = useState([]);
+const buildDailySlots = (duration = 30) => {
+  const slots = [];
+  const startHour = 9;
+  const endHour = 18;
 
-  useEffect(() => {
-    // Mock available slots - in real app, fetch from API
-    const slots = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
-    // Simulate some occupied slots
-    const occupied = ['10:00', '15:00'];
-    setAvailableSlots(slots.filter(slot => !occupied.includes(slot)));
-  }, [date, employeeId]);
+  for (let hour = startHour; hour < endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += duration) {
+      const padMinute = String(minute).padStart(2, '0');
+      slots.push(`${String(hour).padStart(2, '0')}:${padMinute}`);
+    }
+  }
+
+  return slots;
+};
+
+const TimeSlotPicker = ({ selectedTime, onSelectTime, date, employeeId, serviceDuration = 30 }) => {
+  const { data, isLoading } = useAvailability({ funcionarioId: employeeId, date });
+
+  const availableSlots = useMemo(() => {
+    if (!date || !employeeId) return [];
+
+    const allSlots = buildDailySlots(serviceDuration);
+    const occupied = data?.horarios_ocupados || [];
+
+    return allSlots.filter((slot) => !occupied.includes(slot));
+  }, [data, date, employeeId, serviceDuration]);
+
+  if (!date || !employeeId) {
+    return <p className="text-zinc-400">Selecione serviço, funcionário e data para ver horários disponíveis.</p>;
+  }
+
+  if (isLoading) {
+    return <p className="text-zinc-400">Carregando horários disponíveis...</p>;
+  }
+
+  if (availableSlots.length === 0) {
+    return <p className="text-zinc-400">Nenhum horário disponível nesta data.</p>;
+  }
 
   return (
     <div className="grid grid-cols-3 gap-2">
