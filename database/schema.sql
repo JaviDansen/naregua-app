@@ -2,6 +2,7 @@ CREATE TABLE usuarios (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100),
     email VARCHAR(100) UNIQUE,
+    perfil VARCHAR(50) DEFAULT 'cliente',
     senha TEXT
 );
 
