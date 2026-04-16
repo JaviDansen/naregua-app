@@ -15,9 +15,10 @@
 
 // Tenta ler do .env, se não houver, usa o padrão
 const envDevMode = import.meta.env.VITE_DEV_MODE;
-export const DEV_MODE = envDevMode !== undefined 
-  ? envDevMode === 'true' 
-  : true; // TOGGLE HERE (fallback)
+export const DEV_MODE =
+  envDevMode !== undefined
+    ? envDevMode === 'true'
+    : false; //FALLBACk
 
 export const devConfig = {
   enableMocks: DEV_MODE,
