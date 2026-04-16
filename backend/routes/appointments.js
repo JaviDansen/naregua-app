@@ -106,7 +106,7 @@ router.post('/appointments', auth, async (req, res) => {
     }
 
     const servicoExiste = await pool.query(
-      `SELECT id FROM servicos WHERE id = $1`,
+      `SELECT id, duracao FROM servicos WHERE id = $1`,
       [servico_id]
     );
 
@@ -115,6 +115,20 @@ router.post('/appointments', auth, async (req, res) => {
         erro: 'Serviço não encontrado'
       });
     }
+
+    const duracaoNovoServico = Number(servicoExiste.rows[0].duracao);
+
+    if (isNaN(duracaoNovoServico) || duracaoNovoServico <= 0) {
+      return res.status(400).json({
+        erro: 'Duração do serviço inválida'
+      });
+    }
+
+    const inicioNovoAgendamento = new Date(data_hora);
+    const fimNovoAgendamento = new Date(inicioNovoAgendamento);
+    fimNovoAgendamento.setMinutes(
+      fimNovoAgendamento.getMinutes() + duracaoNovoServico
+    );
 
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
@@ -128,17 +142,19 @@ router.post('/appointments', auth, async (req, res) => {
     }
 
     const conflitoHorario = await pool.query(
-      `SELECT id
-       FROM agendamentos
-       WHERE funcionario_id = $1
-         AND data_hora = $2
-         AND status != 'cancelado'`,
-      [funcionario_id, data_hora]
+      `SELECT a.id
+       FROM agendamentos a
+       INNER JOIN servicos s ON a.servico_id = s.id
+       WHERE a.funcionario_id = $1
+         AND a.status != 'cancelado'
+         AND $2::timestamp < (a.data_hora + (s.duracao || ' minutes')::interval)
+         AND $3::timestamp > a.data_hora`,
+      [funcionario_id, data_hora, fimNovoAgendamento.toISOString()]
     );
 
     if (conflitoHorario.rows.length > 0) {
       return res.status(409).json({
-        erro: 'Já existe um agendamento para esse funcionário nesse horário'
+        erro: 'Já existe um agendamento para esse funcionário nesse intervalo de horário'
       });
     }
 
@@ -364,7 +380,7 @@ router.put('/appointments/:id', auth, async (req, res) => {
     }
 
     const servicoExiste = await pool.query(
-      `SELECT id FROM servicos WHERE id = $1`,
+      `SELECT id, duracao FROM servicos WHERE id = $1`,
       [servico_id]
     );
 
@@ -373,6 +389,20 @@ router.put('/appointments/:id', auth, async (req, res) => {
         erro: 'Serviço não encontrado'
       });
     }
+
+    const duracaoNovoServico = Number(servicoExiste.rows[0].duracao);
+
+    if (isNaN(duracaoNovoServico) || duracaoNovoServico <= 0) {
+      return res.status(400).json({
+        erro: 'Duração do serviço inválida'
+      });
+    }
+
+    const inicioNovoAgendamento = new Date(data_hora);
+    const fimNovoAgendamento = new Date(inicioNovoAgendamento);
+    fimNovoAgendamento.setMinutes(
+      fimNovoAgendamento.getMinutes() + duracaoNovoServico
+    );
 
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
@@ -386,18 +416,20 @@ router.put('/appointments/:id', auth, async (req, res) => {
     }
 
     const conflitoHorario = await pool.query(
-      `SELECT id
-       FROM agendamentos
-       WHERE funcionario_id = $1
-         AND data_hora = $2
-         AND status != 'cancelado'
-         AND id != $3`,
-      [funcionario_id, data_hora, id]
+      `SELECT a.id
+       FROM agendamentos a
+       INNER JOIN servicos s ON a.servico_id = s.id
+       WHERE a.funcionario_id = $1
+         AND a.status != 'cancelado'
+         AND a.id != $4
+         AND $2::timestamp < (a.data_hora + (s.duracao || ' minutes')::interval)
+         AND $3::timestamp > a.data_hora`,
+      [funcionario_id, data_hora, fimNovoAgendamento.toISOString(), id]
     );
 
     if (conflitoHorario.rows.length > 0) {
       return res.status(409).json({
-        erro: 'Já existe um agendamento para esse funcionário nesse horário'
+        erro: 'Já existe um agendamento para esse funcionário nesse intervalo de horário'
       });
     }
 
