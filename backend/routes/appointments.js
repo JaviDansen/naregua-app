@@ -568,4 +568,67 @@ router.get('/availability', auth, async (req, res) => {
   }
 });
 
+// Deletar agendamento (hard delete - apenas admin)
+router.delete('/appointments/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  const usuario_id = req.usuario.id;
+
+  try {
+    if (isNaN(Number(id))) {
+      return res.status(400).json({
+        erro: 'ID inválido'
+      });
+    }
+
+    const usuarioExiste = await pool.query(
+      `SELECT id, perfil
+       FROM usuarios
+       WHERE id = $1`,
+      [usuario_id]
+    );
+
+    if (usuarioExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Usuário não encontrado'
+      });
+    }
+
+    if (usuarioExiste.rows[0].perfil !== 'admin') {
+      return res.status(403).json({
+        erro: 'Apenas administradores podem deletar agendamentos'
+      });
+    }
+
+    const agendamentoExistente = await pool.query(
+      `SELECT id
+       FROM agendamentos
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (agendamentoExistente.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Agendamento não encontrado'
+      });
+    }
+
+    const result = await pool.query(
+      `DELETE FROM agendamentos
+       WHERE id = $1
+       RETURNING id`,
+      [id]
+    );
+
+    return res.status(200).json({
+      mensagem: 'Agendamento deletado com sucesso',
+      dados: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Erro no DELETE /appointments/:id:', error.message);
+    return res.status(500).json({
+      erro: 'Erro ao deletar agendamento'
+    });
+  }
+});
+
 module.exports = router;
