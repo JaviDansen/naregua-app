@@ -106,7 +106,7 @@ router.post('/appointments', auth, async (req, res) => {
     }
 
     const servicoExiste = await pool.query(
-      `SELECT id FROM servicos WHERE id = $1`,
+      `SELECT id, duracao FROM servicos WHERE id = $1`,
       [servico_id]
     );
 
@@ -115,6 +115,20 @@ router.post('/appointments', auth, async (req, res) => {
         erro: 'Serviço não encontrado'
       });
     }
+
+    const duracaoNovoServico = Number(servicoExiste.rows[0].duracao);
+
+    if (isNaN(duracaoNovoServico) || duracaoNovoServico <= 0) {
+      return res.status(400).json({
+        erro: 'Duração do serviço inválida'
+      });
+    }
+
+    const inicioNovoAgendamento = new Date(data_hora);
+    const fimNovoAgendamento = new Date(inicioNovoAgendamento);
+    fimNovoAgendamento.setMinutes(
+      fimNovoAgendamento.getMinutes() + duracaoNovoServico
+    );
 
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
@@ -128,17 +142,19 @@ router.post('/appointments', auth, async (req, res) => {
     }
 
     const conflitoHorario = await pool.query(
-      `SELECT id
-       FROM agendamentos
-       WHERE funcionario_id = $1
-         AND data_hora = $2
-         AND status != 'cancelado'`,
-      [funcionario_id, data_hora]
+      `SELECT a.id
+       FROM agendamentos a
+       INNER JOIN servicos s ON a.servico_id = s.id
+       WHERE a.funcionario_id = $1
+         AND a.status != 'cancelado'
+         AND $2::timestamp < (a.data_hora + (s.duracao || ' minutes')::interval)
+         AND $3::timestamp > a.data_hora`,
+      [funcionario_id, data_hora, fimNovoAgendamento.toISOString()]
     );
 
     if (conflitoHorario.rows.length > 0) {
       return res.status(409).json({
-        erro: 'Já existe um agendamento para esse funcionário nesse horário'
+        erro: 'Já existe um agendamento para esse funcionário nesse intervalo de horário'
       });
     }
 
@@ -364,7 +380,7 @@ router.put('/appointments/:id', auth, async (req, res) => {
     }
 
     const servicoExiste = await pool.query(
-      `SELECT id FROM servicos WHERE id = $1`,
+      `SELECT id, duracao FROM servicos WHERE id = $1`,
       [servico_id]
     );
 
@@ -373,6 +389,20 @@ router.put('/appointments/:id', auth, async (req, res) => {
         erro: 'Serviço não encontrado'
       });
     }
+
+    const duracaoNovoServico = Number(servicoExiste.rows[0].duracao);
+
+    if (isNaN(duracaoNovoServico) || duracaoNovoServico <= 0) {
+      return res.status(400).json({
+        erro: 'Duração do serviço inválida'
+      });
+    }
+
+    const inicioNovoAgendamento = new Date(data_hora);
+    const fimNovoAgendamento = new Date(inicioNovoAgendamento);
+    fimNovoAgendamento.setMinutes(
+      fimNovoAgendamento.getMinutes() + duracaoNovoServico
+    );
 
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
@@ -386,18 +416,20 @@ router.put('/appointments/:id', auth, async (req, res) => {
     }
 
     const conflitoHorario = await pool.query(
-      `SELECT id
-       FROM agendamentos
-       WHERE funcionario_id = $1
-         AND data_hora = $2
-         AND status != 'cancelado'
-         AND id != $3`,
-      [funcionario_id, data_hora, id]
+      `SELECT a.id
+       FROM agendamentos a
+       INNER JOIN servicos s ON a.servico_id = s.id
+       WHERE a.funcionario_id = $1
+         AND a.status != 'cancelado'
+         AND a.id != $4
+         AND $2::timestamp < (a.data_hora + (s.duracao || ' minutes')::interval)
+         AND $3::timestamp > a.data_hora`,
+      [funcionario_id, data_hora, fimNovoAgendamento.toISOString(), id]
     );
 
     if (conflitoHorario.rows.length > 0) {
       return res.status(409).json({
-        erro: 'Já existe um agendamento para esse funcionário nesse horário'
+        erro: 'Já existe um agendamento para esse funcionário nesse intervalo de horário'
       });
     }
 
@@ -474,14 +506,15 @@ router.get('/my-appointments', auth, async (req, res) => {
   }
 });
 
-// Disponibilidade Funcionário + Data
+// Disponibilidade Funcionário + Data + Serviço
 router.get('/availability', auth, async (req, res) => {
-  const { funcionario_id, data } = req.query;
+  const { funcionario_id, data, servico_id } = req.query;
+  const intervalo_base_minutos = 20;
 
   try {
-    if (!funcionario_id || !data) {
+    if (!funcionario_id || !data || !servico_id) {
       return res.status(400).json({
-        erro: 'funcionario_id e data são obrigatórios'
+        erro: 'funcionario_id, data e servico_id são obrigatórios'
       });
     }
 
@@ -491,9 +524,17 @@ router.get('/availability', auth, async (req, res) => {
       });
     }
 
-    if (isNaN(Date.parse(data))) {
+    if (isNaN(Number(servico_id))) {
       return res.status(400).json({
-        erro: 'data inválida'
+        erro: 'servico_id inválido'
+      });
+    }
+
+    const formatoDataValido = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (!formatoDataValido.test(data)) {
+      return res.status(400).json({
+        erro: 'data deve estar no formato YYYY-MM-DD'
       });
     }
 
@@ -508,33 +549,163 @@ router.get('/availability', auth, async (req, res) => {
       });
     }
 
+    const servicoExiste = await pool.query(
+      `SELECT id, duracao
+       FROM servicos
+       WHERE id = $1`,
+      [servico_id]
+    );
+
+    if (servicoExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Serviço não encontrado'
+      });
+    }
+
+    const duracaoServico = Number(servicoExiste.rows[0].duracao);
+
+    if (isNaN(duracaoServico) || duracaoServico <= 0) {
+      return res.status(400).json({
+        erro: 'Duração do serviço inválida'
+      });
+    }
+
+    const [ano, mes, dia] = data.split('-').map(Number);
+    const dataLocal = new Date(ano, mes - 1, dia);
+
+    const day_of_week = dataLocal.getDay();
+
+    const regraFuncionamento = await pool.query(
+      `SELECT day_of_week, open_time, close_time, is_closed
+       FROM business_hours
+       WHERE day_of_week = $1`,
+      [day_of_week]
+    );
+
+    if (regraFuncionamento.rows.length === 0) {
+      return res.status(500).json({
+        erro: 'Regra de funcionamento não cadastrada para esse dia'
+      });
+    }
+
+    const regraDia = regraFuncionamento.rows[0];
+
+    const openTime = regraDia.open_time
+      ? regraDia.open_time.slice(0, 5)
+      : null;
+
+    const closeTime = regraDia.close_time
+      ? regraDia.close_time.slice(0, 5)
+      : null;
+
     const result = await pool.query(
       `SELECT
          TO_CHAR(
-           data_hora AT TIME ZONE 'America/Sao_Paulo',
+           a.data_hora AT TIME ZONE 'America/Sao_Paulo',
            'HH24:MI'
-         ) AS horario
-       FROM agendamentos
-       WHERE funcionario_id = $1
-         AND DATE(data_hora AT TIME ZONE 'America/Sao_Paulo') = $2
-         AND status != 'cancelado'
-       ORDER BY data_hora ASC`,
+         ) AS inicio,
+         TO_CHAR(
+           (a.data_hora + (s.duracao || ' minutes')::interval) AT TIME ZONE 'America/Sao_Paulo',
+           'HH24:MI'
+         ) AS fim,
+         s.duracao
+       FROM agendamentos a
+       INNER JOIN servicos s ON a.servico_id = s.id
+       WHERE a.funcionario_id = $1
+         AND DATE(a.data_hora AT TIME ZONE 'America/Sao_Paulo') = $2
+         AND a.status != 'cancelado'
+       ORDER BY a.data_hora ASC`,
       [funcionario_id, data]
     );
 
-    const horarios_ocupados = result.rows.map((item) => item.horario);
+    const agendamentos_ocupados = result.rows.map((item) => ({
+      inicio: item.inicio,
+      fim: item.fim,
+      duracao: Number(item.duracao)
+    }));
 
     return res.status(200).json({
       dados: {
         funcionario_id: Number(funcionario_id),
         data,
-        horarios_ocupados
+        servico_id: Number(servico_id),
+        intervalo_base_minutos,
+        duracao_servico: duracaoServico,
+        horario_funcionamento: {
+          inicio: openTime,
+          fim: closeTime,
+          fechado: regraDia.is_closed
+        },
+        agendamentos_ocupados
       }
     });
   } catch (error) {
     console.error('Erro no GET /availability:', error.message);
     return res.status(500).json({
       erro: 'Erro ao buscar disponibilidade'
+    });
+  }
+});
+
+// Deletar agendamento (hard delete - apenas admin)
+router.delete('/appointments/:id', auth, async (req, res) => {
+  const { id } = req.params;
+  const usuario_id = req.usuario.id;
+
+  try {
+    if (isNaN(Number(id))) {
+      return res.status(400).json({
+        erro: 'ID inválido'
+      });
+    }
+
+    const usuarioExiste = await pool.query(
+      `SELECT id, perfil
+       FROM usuarios
+       WHERE id = $1`,
+      [usuario_id]
+    );
+
+    if (usuarioExiste.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Usuário não encontrado'
+      });
+    }
+
+    if (usuarioExiste.rows[0].perfil !== 'admin') {
+      return res.status(403).json({
+        erro: 'Apenas administradores podem deletar agendamentos'
+      });
+    }
+
+    const agendamentoExistente = await pool.query(
+      `SELECT id
+       FROM agendamentos
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (agendamentoExistente.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Agendamento não encontrado'
+      });
+    }
+
+    const result = await pool.query(
+      `DELETE FROM agendamentos
+       WHERE id = $1
+       RETURNING id`,
+      [id]
+    );
+
+    return res.status(200).json({
+      mensagem: 'Agendamento deletado com sucesso',
+      dados: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Erro no DELETE /appointments/:id:', error.message);
+    return res.status(500).json({
+      erro: 'Erro ao deletar agendamento'
     });
   }
 });

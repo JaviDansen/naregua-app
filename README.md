@@ -1,4 +1,4 @@
-# 💈 Naregua App
+# 💈 NaReguaApp
 
 Sistema de agendamento para barbearias desenvolvido como projeto acadêmico, com foco em boas práticas de arquitetura, API REST, autenticação e gerenciamento de horários.
 
