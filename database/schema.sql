@@ -2,8 +2,11 @@ CREATE TABLE usuarios (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100),
     email VARCHAR(100) UNIQUE,
-    perfil VARCHAR(50) DEFAULT 'cliente',
-    senha TEXT
+    perfil VARCHAR(50) NOT NULL DEFAULT 'usuario',
+    senha TEXT,
+
+    CONSTRAINT usuarios_perfil_check
+    CHECK (perfil IN ('usuario', 'admin'))
 );
 
 CREATE TABLE servicos (
@@ -27,8 +30,11 @@ CREATE TABLE agendamentos (
     servico_id INT NOT NULL,
     funcionario_id INT NOT NULL,
     data_hora TIMESTAMP NOT NULL,
-    status VARCHAR(50) DEFAULT 'agendado',
+    status VARCHAR(50) NOT NULL DEFAULT 'agendado',
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT agendamentos_status_check
+    CHECK (status IN ('agendado', 'cancelado', 'concluido', 'faltou')),
 
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
     FOREIGN KEY (servico_id) REFERENCES servicos(id),
