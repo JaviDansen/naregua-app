@@ -508,7 +508,7 @@ router.put("/appointments/:id", auth, async (req, res) => {
 // Meus agendamentos
 router.get("/my-appointments", auth, async (req, res) => {
   const usuario_id = req.usuario.id;
-
+  
   try {
     const result = await pool.query(
       `SELECT
@@ -516,6 +516,7 @@ router.get("/my-appointments", auth, async (req, res) => {
         a.servico_id,
         a.funcionario_id,
         s.nome AS servico,
+        s.duracao AS duracao_servico,
         f.nome AS funcionario,
         TO_CHAR(
           a.data_hora AT TIME ZONE 'America/Sao_Paulo',
@@ -537,12 +538,12 @@ router.get("/my-appointments", auth, async (req, res) => {
       situacao_operacional: getSituacaoOperacional(
         item.status,
         item.data_hora_iso,
-        item.duracao_servico
-      )
+        item.duracao_servico,
+      ),
     }));
 
     return res.status(200).json({
-      dados
+      dados,
     });
   } catch (error) {
     console.error("Erro no GET /my-appointments:", error.message);
@@ -742,17 +743,21 @@ router.delete(
   },
 );
 
+// Marcar agendamento como Completo
 router.put(
-  '/appointments/:id/complete',
+  "/appointments/:id/complete",
   auth,
-  authorize('admin', 'Acesso negado. Apenas administradores podem concluir agendamentos.'),
+  authorize(
+    "admin",
+    "Acesso negado. Apenas administradores podem concluir agendamentos.",
+  ),
   async (req, res) => {
     const { id } = req.params;
 
     try {
       if (isNaN(Number(id))) {
         return res.status(400).json({
-          erro: 'ID do agendamento inválido. Informe um identificador numérico válido.'
+          erro: "ID do agendamento inválido. Informe um identificador numérico válido.",
         });
       }
 
@@ -760,32 +765,32 @@ router.put(
         `SELECT id, status
          FROM agendamentos
          WHERE id = $1`,
-        [id]
+        [id],
       );
 
       if (agendamentoExistente.rows.length === 0) {
         return res.status(404).json({
-          erro: 'Agendamento não encontrado para o ID informado.'
+          erro: "Agendamento não encontrado para o ID informado.",
         });
       }
 
       const statusAtual = agendamentoExistente.rows[0].status;
 
-      if (statusAtual === 'cancelado') {
+      if (statusAtual === "cancelado") {
         return res.status(400).json({
-          erro: 'Não é possível concluir este agendamento porque ele já está cancelado.'
+          erro: "Não é possível concluir este agendamento porque ele já está cancelado.",
         });
       }
 
-      if (statusAtual === 'concluido') {
+      if (statusAtual === "concluido") {
         return res.status(400).json({
-          erro: 'Não é possível concluir este agendamento porque ele já foi concluído.'
+          erro: "Não é possível concluir este agendamento porque ele já foi concluído.",
         });
       }
 
-      if (statusAtual === 'faltou') {
+      if (statusAtual === "faltou") {
         return res.status(400).json({
-          erro: 'Não é possível concluir este agendamento porque ele já foi marcado como falta.'
+          erro: "Não é possível concluir este agendamento porque ele já foi marcado como falta.",
         });
       }
 
@@ -801,33 +806,37 @@ router.put(
              'DD/MM/YYYY HH24:MI'
            ) AS data_hora,
            data_hora AS data_hora_iso`,
-        [id]
+        [id],
       );
 
       return res.status(200).json({
-        mensagem: 'Agendamento marcado como concluído com sucesso.',
-        dados: result.rows[0]
+        mensagem: "Agendamento marcado como concluído com sucesso.",
+        dados: result.rows[0],
       });
     } catch (error) {
-      console.error('Erro no PUT /appointments/:id/complete:', error.message);
+      console.error("Erro no PUT /appointments/:id/complete:", error.message);
       return res.status(500).json({
-        erro: 'Erro ao concluir agendamento. Tente novamente.'
+        erro: "Erro ao concluir agendamento. Tente novamente.",
       });
     }
-  }
+  },
 );
 
+// Marcar agendamento como "faltou"
 router.put(
-  '/appointments/:id/no-show',
+  "/appointments/:id/no-show",
   auth,
-  authorize('admin', 'Acesso negado. Apenas administradores podem marcar falta em agendamentos.'),
+  authorize(
+    "admin",
+    "Acesso negado. Apenas administradores podem marcar falta em agendamentos.",
+  ),
   async (req, res) => {
     const { id } = req.params;
 
     try {
       if (isNaN(Number(id))) {
         return res.status(400).json({
-          erro: 'ID do agendamento inválido. Informe um identificador numérico válido.'
+          erro: "ID do agendamento inválido. Informe um identificador numérico válido.",
         });
       }
 
@@ -835,32 +844,32 @@ router.put(
         `SELECT id, status
          FROM agendamentos
          WHERE id = $1`,
-        [id]
+        [id],
       );
 
       if (agendamentoExistente.rows.length === 0) {
         return res.status(404).json({
-          erro: 'Agendamento não encontrado para o ID informado.'
+          erro: "Agendamento não encontrado para o ID informado.",
         });
       }
 
       const statusAtual = agendamentoExistente.rows[0].status;
 
-      if (statusAtual === 'cancelado') {
+      if (statusAtual === "cancelado") {
         return res.status(400).json({
-          erro: 'Não é possível marcar falta porque este agendamento já está cancelado.'
+          erro: "Não é possível marcar falta porque este agendamento já está cancelado.",
         });
       }
 
-      if (statusAtual === 'concluido') {
+      if (statusAtual === "concluido") {
         return res.status(400).json({
-          erro: 'Não é possível marcar falta porque este agendamento já foi concluído.'
+          erro: "Não é possível marcar falta porque este agendamento já foi concluído.",
         });
       }
 
-      if (statusAtual === 'faltou') {
+      if (statusAtual === "faltou") {
         return res.status(400).json({
-          erro: 'Não é possível marcar falta porque este agendamento já está com status faltou.'
+          erro: "Não é possível marcar falta porque este agendamento já está com status faltou.",
         });
       }
 
@@ -876,20 +885,20 @@ router.put(
              'DD/MM/YYYY HH24:MI'
            ) AS data_hora,
            data_hora AS data_hora_iso`,
-        [id]
+        [id],
       );
 
       return res.status(200).json({
-        mensagem: 'Agendamento marcado como falta com sucesso.',
-        dados: result.rows[0]
+        mensagem: "Agendamento marcado como falta com sucesso.",
+        dados: result.rows[0],
       });
     } catch (error) {
-      console.error('Erro no PUT /appointments/:id/no-show:', error.message);
+      console.error("Erro no PUT /appointments/:id/no-show:", error.message);
       return res.status(500).json({
-        erro: 'Erro ao marcar falta no agendamento. Tente novamente.'
+        erro: "Erro ao marcar falta no agendamento. Tente novamente.",
       });
     }
-  }
+  },
 );
 
 module.exports = router;
