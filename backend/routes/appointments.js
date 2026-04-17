@@ -743,7 +743,7 @@ router.delete(
   },
 );
 
-// Marcar agendamento como Completo
+// Marcar agendamento como "concluido"
 router.put(
   "/appointments/:id/complete",
   auth,
