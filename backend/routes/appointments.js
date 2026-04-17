@@ -3,6 +3,7 @@ const router = express.Router();
 
 const pool = require('../db');
 const auth = require('../middlewares/auth');
+const authorize = require('../middlewares/role');
 
 function getDayOfWeekAndTimeInSaoPaulo(dataHora) {
   const data = new Date(dataHora);
@@ -648,66 +649,51 @@ router.get('/availability', auth, async (req, res) => {
 });
 
 // Deletar agendamento (hard delete - apenas admin)
-router.delete('/appointments/:id', auth, async (req, res) => {
-  const { id } = req.params;
-  const usuario_id = req.usuario.id;
+router.delete(
+  '/appointments/:id',
+  auth,
+  authorize('admin', 'Acesso negado. Apenas administradores podem deletar agendamentos.'),
+  async (req, res) => {
+    const { id } = req.params;
 
-  try {
-    if (isNaN(Number(id))) {
-      return res.status(400).json({
-        erro: 'ID inválido'
+    try {
+      if (isNaN(Number(id))) {
+        return res.status(400).json({
+          erro: 'ID do agendamento inválido. Informe um identificador numérico válido.'
+        });
+      }
+
+      const agendamentoExistente = await pool.query(
+        `SELECT id
+         FROM agendamentos
+         WHERE id = $1`,
+        [id]
+      );
+
+      if (agendamentoExistente.rows.length === 0) {
+        return res.status(404).json({
+          erro: 'Agendamento não encontrado para o ID informado.'
+        });
+      }
+
+      const result = await pool.query(
+        `DELETE FROM agendamentos
+         WHERE id = $1
+         RETURNING id`,
+        [id]
+      );
+
+      return res.status(200).json({
+        mensagem: 'Agendamento deletado com sucesso.',
+        dados: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Erro no DELETE /appointments/:id:', error.message);
+      return res.status(500).json({
+        erro: 'Erro ao deletar agendamento. Tente novamente.'
       });
     }
-
-    const usuarioExiste = await pool.query(
-      `SELECT id, perfil
-       FROM usuarios
-       WHERE id = $1`,
-      [usuario_id]
-    );
-
-    if (usuarioExiste.rows.length === 0) {
-      return res.status(404).json({
-        erro: 'Usuário não encontrado'
-      });
-    }
-
-    if (usuarioExiste.rows[0].perfil !== 'admin') {
-      return res.status(403).json({
-        erro: 'Apenas administradores podem deletar agendamentos'
-      });
-    }
-
-    const agendamentoExistente = await pool.query(
-      `SELECT id
-       FROM agendamentos
-       WHERE id = $1`,
-      [id]
-    );
-
-    if (agendamentoExistente.rows.length === 0) {
-      return res.status(404).json({
-        erro: 'Agendamento não encontrado'
-      });
-    }
-
-    const result = await pool.query(
-      `DELETE FROM agendamentos
-       WHERE id = $1
-       RETURNING id`,
-      [id]
-    );
-
-    return res.status(200).json({
-      mensagem: 'Agendamento deletado com sucesso',
-      dados: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Erro no DELETE /appointments/:id:', error.message);
-    return res.status(500).json({
-      erro: 'Erro ao deletar agendamento'
-    });
   }
-});
+);
 
 module.exports = router;
