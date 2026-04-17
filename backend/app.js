@@ -8,7 +8,28 @@ const employeesRoutes = require('./routes/employees');
 const appointmentsRoutes = require('./routes/appointments');
 const businessHoursRoutes = require('./routes/businessHours');
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Permite requisições sem origin, como Thunder Client/Postman
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Origem não permitida pelo CORS'));
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
