@@ -1,23 +1,23 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const pool = require('../db');
-const auth = require('../middlewares/auth');
-const authorize = require('../middlewares/role');
+const pool = require("../db");
+const auth = require("../middlewares/auth");
+const authorize = require("../middlewares/role");
 
 function getDayOfWeekAndTimeInSaoPaulo(dataHora) {
   const data = new Date(dataHora);
 
-  const formatterDia = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Sao_Paulo',
-    weekday: 'short'
+  const formatterDia = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    weekday: "short",
   });
 
-  const formatterHora = new Intl.DateTimeFormat('pt-BR', {
-    timeZone: 'America/Sao_Paulo',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
+  const formatterHora = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   });
 
   const diaTexto = formatterDia.format(data);
@@ -30,36 +30,52 @@ function getDayOfWeekAndTimeInSaoPaulo(dataHora) {
     Wed: 3,
     Thu: 4,
     Fri: 5,
-    Sat: 6
+    Sat: 6,
   };
 
   return {
     day_of_week: mapaDias[diaTexto],
-    horario
+    horario,
   };
 }
 
+function getSituacaoOperacional(status, dataHoraIso, duracaoServico) {
+  if (status !== "agendado") {
+    return "normal";
+  }
+
+  const inicio = new Date(dataHoraIso);
+  const fim = new Date(inicio);
+  fim.setMinutes(fim.getMinutes() + Number(duracaoServico || 0));
+
+  if (new Date() > fim) {
+    return "pendente_confirmacao";
+  }
+
+  return "normal";
+}
+
 // Criar agendamento
-router.post('/appointments', auth, async (req, res) => {
+router.post("/appointments", auth, async (req, res) => {
   const { servico_id, funcionario_id, data_hora } = req.body;
   const usuario_id = req.usuario.id;
 
   try {
     if (servico_id == null || funcionario_id == null || !data_hora) {
       return res.status(400).json({
-        erro: 'servico_id, funcionario_id e data_hora são obrigatórios'
+        erro: "servico_id, funcionario_id e data_hora são obrigatórios",
       });
     }
 
     if (isNaN(Date.parse(data_hora))) {
       return res.status(400).json({
-        erro: 'data_hora inválida'
+        erro: "data_hora inválida",
       });
     }
 
     if (new Date(data_hora) < new Date()) {
       return res.status(400).json({
-        erro: 'Não é possível criar agendamento em data/hora passada'
+        erro: "Não é possível criar agendamento em data/hora passada",
       });
     }
 
@@ -69,12 +85,12 @@ router.post('/appointments', auth, async (req, res) => {
       `SELECT day_of_week, open_time, close_time, is_closed
        FROM business_hours
        WHERE day_of_week = $1`,
-      [day_of_week]
+      [day_of_week],
     );
 
     if (regraFuncionamento.rows.length === 0) {
       return res.status(500).json({
-        erro: 'Regra de funcionamento não cadastrada para esse dia'
+        erro: "Regra de funcionamento não cadastrada para esse dia",
       });
     }
 
@@ -82,7 +98,7 @@ router.post('/appointments', auth, async (req, res) => {
 
     if (regraDia.is_closed) {
       return res.status(400).json({
-        erro: 'Não é possível agendar em um dia em que a barbearia está fechada'
+        erro: "Não é possível agendar em um dia em que a barbearia está fechada",
       });
     }
 
@@ -91,29 +107,29 @@ router.post('/appointments', auth, async (req, res) => {
 
     if (horario < openTime || horario >= closeTime) {
       return res.status(400).json({
-        erro: 'Horário fora do funcionamento da barbearia'
+        erro: "Horário fora do funcionamento da barbearia",
       });
     }
 
     const usuarioExiste = await pool.query(
       `SELECT id FROM usuarios WHERE id = $1`,
-      [usuario_id]
+      [usuario_id],
     );
 
     if (usuarioExiste.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Usuário não encontrado'
+        erro: "Usuário não encontrado",
       });
     }
 
     const servicoExiste = await pool.query(
       `SELECT id, duracao FROM servicos WHERE id = $1`,
-      [servico_id]
+      [servico_id],
     );
 
     if (servicoExiste.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Serviço não encontrado'
+        erro: "Serviço não encontrado",
       });
     }
 
@@ -121,24 +137,24 @@ router.post('/appointments', auth, async (req, res) => {
 
     if (isNaN(duracaoNovoServico) || duracaoNovoServico <= 0) {
       return res.status(400).json({
-        erro: 'Duração do serviço inválida'
+        erro: "Duração do serviço inválida",
       });
     }
 
     const inicioNovoAgendamento = new Date(data_hora);
     const fimNovoAgendamento = new Date(inicioNovoAgendamento);
     fimNovoAgendamento.setMinutes(
-      fimNovoAgendamento.getMinutes() + duracaoNovoServico
+      fimNovoAgendamento.getMinutes() + duracaoNovoServico,
     );
 
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
-      [funcionario_id]
+      [funcionario_id],
     );
 
     if (funcionarioExiste.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Funcionário não encontrado'
+        erro: "Funcionário não encontrado",
       });
     }
 
@@ -150,12 +166,12 @@ router.post('/appointments', auth, async (req, res) => {
          AND a.status != 'cancelado'
          AND $2::timestamp < (a.data_hora + (s.duracao || ' minutes')::interval)
          AND $3::timestamp > a.data_hora`,
-      [funcionario_id, data_hora, fimNovoAgendamento.toISOString()]
+      [funcionario_id, data_hora, fimNovoAgendamento.toISOString()],
     );
 
     if (conflitoHorario.rows.length > 0) {
       return res.status(409).json({
-        erro: 'Já existe um agendamento para esse funcionário nesse intervalo de horário'
+        erro: "Já existe um agendamento para esse funcionário nesse intervalo de horário",
       });
     }
 
@@ -176,34 +192,39 @@ router.post('/appointments', auth, async (req, res) => {
            criado_em AT TIME ZONE 'America/Sao_Paulo',
            'DD/MM/YYYY HH24:MI'
          ) AS criado_em`,
-      [usuario_id, servico_id, funcionario_id, data_hora]
+      [usuario_id, servico_id, funcionario_id, data_hora],
     );
 
     return res.status(201).json({
-      mensagem: 'Agendamento criado com sucesso',
-      dados: result.rows[0]
+      mensagem: "Agendamento criado com sucesso",
+      dados: result.rows[0],
     });
   } catch (error) {
-    console.error('Erro no POST /appointments:', error.message);
+    console.error("Erro no POST /appointments:", error.message);
     return res.status(500).json({
-      erro: 'Erro ao criar agendamento'
+      erro: "Erro ao criar agendamento",
     });
   }
 });
 
 // Listar agendamentos
-router.get('/appointments', auth, async (req, res) => {
+router.get("/appointments", auth, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
         a.id,
+        a.usuario_id,
+        a.servico_id,
+        a.funcionario_id,
         u.nome AS usuario,
         s.nome AS servico,
+        s.duracao AS duracao_servico,
         f.nome AS funcionario,
         TO_CHAR(
           a.data_hora AT TIME ZONE 'America/Sao_Paulo',
           'DD/MM/YYYY HH24:MI'
         ) AS data_hora,
+        a.data_hora AS data_hora_iso,
         a.status,
         TO_CHAR(
           a.criado_em AT TIME ZONE 'America/Sao_Paulo',
@@ -216,25 +237,39 @@ router.get('/appointments', auth, async (req, res) => {
       ORDER BY a.data_hora ASC
     `);
 
+    const dados = result.rows.map((item) => ({
+      ...item,
+      duracao_servico: Number(item.duracao_servico),
+      situacao_operacional: getSituacaoOperacional(
+        item.status,
+        item.data_hora_iso,
+        item.duracao_servico,
+      ),
+    }));
+
     return res.status(200).json({
-      dados: result.rows
+      dados,
+    });
+
+    return res.status(200).json({
+      dados: result.rows,
     });
   } catch (error) {
-    console.error('Erro no GET /appointments:', error.message);
+    console.error("Erro no GET /appointments:", error.message);
     return res.status(500).json({
-      erro: 'Erro ao buscar agendamentos'
+      erro: "Erro ao buscar agendamentos",
     });
   }
 });
 
 // Cancelar agendamento
-router.put('/appointments/:id/cancel', auth, async (req, res) => {
+router.put("/appointments/:id/cancel", auth, async (req, res) => {
   const { id } = req.params;
 
   try {
     if (isNaN(Number(id))) {
       return res.status(400).json({
-        erro: 'ID inválido'
+        erro: "ID inválido",
       });
     }
 
@@ -242,18 +277,18 @@ router.put('/appointments/:id/cancel', auth, async (req, res) => {
       `SELECT id, status
        FROM agendamentos
        WHERE id = $1`,
-      [id]
+      [id],
     );
 
     if (agendamentoExistente.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Agendamento não encontrado'
+        erro: "Agendamento não encontrado",
       });
     }
 
-    if (agendamentoExistente.rows[0].status === 'cancelado') {
+    if (agendamentoExistente.rows[0].status === "cancelado") {
       return res.status(400).json({
-        erro: 'Esse agendamento já está cancelado'
+        erro: "Esse agendamento já está cancelado",
       });
     }
 
@@ -272,23 +307,23 @@ router.put('/appointments/:id/cancel', auth, async (req, res) => {
            criado_em AT TIME ZONE 'America/Sao_Paulo',
            'DD/MM/YYYY HH24:MI'
          ) AS criado_em`,
-      [id]
+      [id],
     );
 
     return res.status(200).json({
-      mensagem: 'Agendamento cancelado com sucesso',
-      dados: result.rows[0]
+      mensagem: "Agendamento cancelado com sucesso",
+      dados: result.rows[0],
     });
   } catch (error) {
-    console.error('Erro no PUT /appointments/:id/cancel:', error.message);
+    console.error("Erro no PUT /appointments/:id/cancel:", error.message);
     return res.status(500).json({
-      erro: 'Erro ao cancelar agendamento'
+      erro: "Erro ao cancelar agendamento",
     });
   }
 });
 
 // Editar agendamento
-router.put('/appointments/:id', auth, async (req, res) => {
+router.put("/appointments/:id", auth, async (req, res) => {
   const { id } = req.params;
   const { servico_id, funcionario_id, data_hora } = req.body;
   const usuario_id = req.usuario.id;
@@ -296,25 +331,25 @@ router.put('/appointments/:id', auth, async (req, res) => {
   try {
     if (!usuario_id || !servico_id || !funcionario_id || !data_hora) {
       return res.status(400).json({
-        erro: 'servico_id, funcionario_id e data_hora são obrigatórios'
+        erro: "servico_id, funcionario_id e data_hora são obrigatórios",
       });
     }
 
     if (isNaN(Number(id))) {
       return res.status(400).json({
-        erro: 'ID inválido'
+        erro: "ID inválido",
       });
     }
 
     if (isNaN(Date.parse(data_hora))) {
       return res.status(400).json({
-        erro: 'data_hora inválida'
+        erro: "data_hora inválida",
       });
     }
 
     if (new Date(data_hora) < new Date()) {
       return res.status(400).json({
-        erro: 'Não é possível editar agendamento para data/hora passada'
+        erro: "Não é possível editar agendamento para data/hora passada",
       });
     }
 
@@ -324,12 +359,12 @@ router.put('/appointments/:id', auth, async (req, res) => {
       `SELECT day_of_week, open_time, close_time, is_closed
        FROM business_hours
        WHERE day_of_week = $1`,
-      [day_of_week]
+      [day_of_week],
     );
 
     if (regraFuncionamento.rows.length === 0) {
       return res.status(500).json({
-        erro: 'Regra de funcionamento não cadastrada para esse dia'
+        erro: "Regra de funcionamento não cadastrada para esse dia",
       });
     }
 
@@ -337,7 +372,7 @@ router.put('/appointments/:id', auth, async (req, res) => {
 
     if (regraDia.is_closed) {
       return res.status(400).json({
-        erro: 'Não é possível agendar em um dia em que a barbearia está fechada'
+        erro: "Não é possível agendar em um dia em que a barbearia está fechada",
       });
     }
 
@@ -346,7 +381,7 @@ router.put('/appointments/:id', auth, async (req, res) => {
 
     if (horario < openTime || horario >= closeTime) {
       return res.status(400).json({
-        erro: 'Horário fora do funcionamento da barbearia'
+        erro: "Horário fora do funcionamento da barbearia",
       });
     }
 
@@ -354,40 +389,40 @@ router.put('/appointments/:id', auth, async (req, res) => {
       `SELECT id, status
        FROM agendamentos
        WHERE id = $1`,
-      [id]
+      [id],
     );
 
     if (agendamentoExistente.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Agendamento não encontrado'
+        erro: "Agendamento não encontrado",
       });
     }
 
-    if (agendamentoExistente.rows[0].status === 'cancelado') {
+    if (agendamentoExistente.rows[0].status === "cancelado") {
       return res.status(400).json({
-        erro: 'Não é possível editar um agendamento cancelado'
+        erro: "Não é possível editar um agendamento cancelado",
       });
     }
 
     const usuarioExiste = await pool.query(
       `SELECT id FROM usuarios WHERE id = $1`,
-      [usuario_id]
+      [usuario_id],
     );
 
     if (usuarioExiste.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Usuário não encontrado'
+        erro: "Usuário não encontrado",
       });
     }
 
     const servicoExiste = await pool.query(
       `SELECT id, duracao FROM servicos WHERE id = $1`,
-      [servico_id]
+      [servico_id],
     );
 
     if (servicoExiste.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Serviço não encontrado'
+        erro: "Serviço não encontrado",
       });
     }
 
@@ -395,24 +430,24 @@ router.put('/appointments/:id', auth, async (req, res) => {
 
     if (isNaN(duracaoNovoServico) || duracaoNovoServico <= 0) {
       return res.status(400).json({
-        erro: 'Duração do serviço inválida'
+        erro: "Duração do serviço inválida",
       });
     }
 
     const inicioNovoAgendamento = new Date(data_hora);
     const fimNovoAgendamento = new Date(inicioNovoAgendamento);
     fimNovoAgendamento.setMinutes(
-      fimNovoAgendamento.getMinutes() + duracaoNovoServico
+      fimNovoAgendamento.getMinutes() + duracaoNovoServico,
     );
 
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
-      [funcionario_id]
+      [funcionario_id],
     );
 
     if (funcionarioExiste.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Funcionário não encontrado'
+        erro: "Funcionário não encontrado",
       });
     }
 
@@ -425,12 +460,12 @@ router.put('/appointments/:id', auth, async (req, res) => {
          AND a.id != $4
          AND $2::timestamp < (a.data_hora + (s.duracao || ' minutes')::interval)
          AND $3::timestamp > a.data_hora`,
-      [funcionario_id, data_hora, fimNovoAgendamento.toISOString(), id]
+      [funcionario_id, data_hora, fimNovoAgendamento.toISOString(), id],
     );
 
     if (conflitoHorario.rows.length > 0) {
       return res.status(409).json({
-        erro: 'Já existe um agendamento para esse funcionário nesse intervalo de horário'
+        erro: "Já existe um agendamento para esse funcionário nesse intervalo de horário",
       });
     }
 
@@ -455,79 +490,89 @@ router.put('/appointments/:id', auth, async (req, res) => {
            criado_em AT TIME ZONE 'America/Sao_Paulo',
            'DD/MM/YYYY HH24:MI'
          ) AS criado_em`,
-      [usuario_id, servico_id, funcionario_id, data_hora, id]
+      [usuario_id, servico_id, funcionario_id, data_hora, id],
     );
 
     return res.status(200).json({
-      mensagem: 'Agendamento atualizado com sucesso',
-      dados: result.rows[0]
+      mensagem: "Agendamento atualizado com sucesso",
+      dados: result.rows[0],
     });
   } catch (error) {
-    console.error('Erro no PUT /appointments/:id:', error.message);
+    console.error("Erro no PUT /appointments/:id:", error.message);
     return res.status(500).json({
-      erro: 'Erro ao atualizar agendamento'
+      erro: "Erro ao atualizar agendamento",
     });
   }
 });
 
 // Meus agendamentos
-router.get('/my-appointments', auth, async (req, res) => {
+router.get("/my-appointments", auth, async (req, res) => {
   const usuario_id = req.usuario.id;
 
   try {
     const result = await pool.query(
       `SELECT
-         a.id,
-         a.servico_id,
-         a.funcionario_id,
-         s.nome AS servico,
-         f.nome AS funcionario,
-         TO_CHAR(
-           a.data_hora AT TIME ZONE 'America/Sao_Paulo',
-           'DD/MM/YYYY HH24:MI'
-         ) AS data_hora,
-         a.status,
-         a.data_hora AS data_hora_iso
-       FROM agendamentos a
-       INNER JOIN servicos s ON a.servico_id = s.id
-       INNER JOIN funcionarios f ON a.funcionario_id = f.id
-       WHERE a.usuario_id = $1
-       ORDER BY a.data_hora ASC`,
-      [usuario_id]
+        a.id,
+        a.servico_id,
+        a.funcionario_id,
+        s.nome AS servico,
+        f.nome AS funcionario,
+        TO_CHAR(
+          a.data_hora AT TIME ZONE 'America/Sao_Paulo',
+          'DD/MM/YYYY HH24:MI'
+        ) AS data_hora,
+        a.status,
+        a.data_hora AS data_hora_iso
+      FROM agendamentos a
+      INNER JOIN servicos s ON a.servico_id = s.id
+      INNER JOIN funcionarios f ON a.funcionario_id = f.id
+      WHERE a.usuario_id = $1
+      ORDER BY a.data_hora ASC`,
+      [usuario_id],
     );
 
+    const dados = result.rows.map((item) => ({
+      ...item,
+      duracao_servico: Number(item.duracao_servico),
+      situacao_operacional: getSituacaoOperacional(
+        item.status,
+        item.data_hora_iso,
+        item.duracao_servico
+      )
+    }));
+
     return res.status(200).json({
-      dados: result.rows
+      dados
     });
   } catch (error) {
-    console.error('Erro no GET /my-appointments:', error.message);
+    console.error("Erro no GET /my-appointments:", error.message);
     return res.status(500).json({
-      erro: 'Erro ao buscar seus agendamentos'
+      erro: "Erro ao buscar seus agendamentos",
     });
   }
 });
 
 // Disponibilidade Funcionário + Data + Serviço
-router.get('/availability', auth, async (req, res) => {
+router.get("/availability", auth, async (req, res) => {
   const { funcionario_id, data, servico_id } = req.query;
   const intervalo_base_minutos = 20;
 
   try {
     if (!funcionario_id || !data || !servico_id) {
       return res.status(400).json({
-        erro: 'funcionario_id, data e servico_id são obrigatórios'
+        erro: "funcionario_id, data e servico_id são obrigatórios",
       });
     }
 
     if (isNaN(Number(funcionario_id))) {
       return res.status(400).json({
-        erro: 'funcionario_id inválido'
+        erro: "funcionario_id inválido",
       });
     }
 
     if (isNaN(Number(servico_id))) {
       return res.status(400).json({
-        erro: 'servico_id inválido'
+        erro: "servico_id inválido",
       });
     }
 
@@ -535,18 +580,18 @@ router.get('/availability', auth, async (req, res) => {
 
     if (!formatoDataValido.test(data)) {
       return res.status(400).json({
-        erro: 'data deve estar no formato YYYY-MM-DD'
+        erro: "data deve estar no formato YYYY-MM-DD",
       });
     }
 
     const funcionarioExiste = await pool.query(
       `SELECT id FROM funcionarios WHERE id = $1`,
-      [funcionario_id]
+      [funcionario_id],
     );
 
     if (funcionarioExiste.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Funcionário não encontrado'
+        erro: "Funcionário não encontrado",
       });
     }
 
@@ -554,12 +599,12 @@ router.get('/availability', auth, async (req, res) => {
       `SELECT id, duracao
        FROM servicos
        WHERE id = $1`,
-      [servico_id]
+      [servico_id],
     );
 
     if (servicoExiste.rows.length === 0) {
       return res.status(404).json({
-        erro: 'Serviço não encontrado'
+        erro: "Serviço não encontrado",
       });
     }
 
@@ -567,11 +612,11 @@ router.get('/availability', auth, async (req, res) => {
 
     if (isNaN(duracaoServico) || duracaoServico <= 0) {
       return res.status(400).json({
-        erro: 'Duração do serviço inválida'
+        erro: "Duração do serviço inválida",
       });
     }
 
-    const [ano, mes, dia] = data.split('-').map(Number);
+    const [ano, mes, dia] = data.split("-").map(Number);
     const dataLocal = new Date(ano, mes - 1, dia);
 
     const day_of_week = dataLocal.getDay();
@@ -580,20 +625,18 @@ router.get('/availability', auth, async (req, res) => {
       `SELECT day_of_week, open_time, close_time, is_closed
        FROM business_hours
        WHERE day_of_week = $1`,
-      [day_of_week]
+      [day_of_week],
     );
 
     if (regraFuncionamento.rows.length === 0) {
       return res.status(500).json({
-        erro: 'Regra de funcionamento não cadastrada para esse dia'
+        erro: "Regra de funcionamento não cadastrada para esse dia",
       });
     }
 
     const regraDia = regraFuncionamento.rows[0];
 
-    const openTime = regraDia.open_time
-      ? regraDia.open_time.slice(0, 5)
-      : null;
+    const openTime = regraDia.open_time ? regraDia.open_time.slice(0, 5) : null;
 
     const closeTime = regraDia.close_time
       ? regraDia.close_time.slice(0, 5)
@@ -616,13 +659,13 @@ router.get('/availability', auth, async (req, res) => {
          AND DATE(a.data_hora AT TIME ZONE 'America/Sao_Paulo') = $2
          AND a.status != 'cancelado'
        ORDER BY a.data_hora ASC`,
-      [funcionario_id, data]
+      [funcionario_id, data],
     );
 
     const agendamentos_ocupados = result.rows.map((item) => ({
       inicio: item.inicio,
       fim: item.fim,
-      duracao: Number(item.duracao)
+      duracao: Number(item.duracao),
     }));
 
     return res.status(200).json({
@@ -635,24 +678,74 @@ router.get('/availability', auth, async (req, res) => {
         horario_funcionamento: {
           inicio: openTime,
           fim: closeTime,
-          fechado: regraDia.is_closed
+          fechado: regraDia.is_closed,
         },
-        agendamentos_ocupados
-      }
+        agendamentos_ocupados,
+      },
     });
   } catch (error) {
-    console.error('Erro no GET /availability:', error.message);
+    console.error("Erro no GET /availability:", error.message);
     return res.status(500).json({
-      erro: 'Erro ao buscar disponibilidade'
+      erro: "Erro ao buscar disponibilidade",
     });
   }
 });
 
 // Deletar agendamento (hard delete - apenas admin)
 router.delete(
-  '/appointments/:id',
+  "/appointments/:id",
   auth,
-  authorize('admin', 'Acesso negado. Apenas administradores podem deletar agendamentos.'),
+  authorize(
+    "admin",
+    "Acesso negado. Apenas administradores podem deletar agendamentos.",
+  ),
+  async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      if (isNaN(Number(id))) {
+        return res.status(400).json({
+          erro: "ID do agendamento inválido. Informe um identificador numérico válido.",
+        });
+      }
+
+      const agendamentoExistente = await pool.query(
+        `SELECT id
+         FROM agendamentos
+         WHERE id = $1`,
+        [id],
+      );
+
+      if (agendamentoExistente.rows.length === 0) {
+        return res.status(404).json({
+          erro: "Agendamento não encontrado para o ID informado.",
+        });
+      }
+
+      const result = await pool.query(
+        `DELETE FROM agendamentos
+         WHERE id = $1
+         RETURNING id`,
+        [id],
+      );
+
+      return res.status(200).json({
+        mensagem: "Agendamento deletado com sucesso.",
+        dados: result.rows[0],
+      });
+    } catch (error) {
+      console.error("Erro no DELETE /appointments/:id:", error.message);
+      return res.status(500).json({
+        erro: "Erro ao deletar agendamento. Tente novamente.",
+      });
+    }
+  },
+);
+
+router.put(
+  '/appointments/:id/complete',
+  auth,
+  authorize('admin', 'Acesso negado. Apenas administradores podem concluir agendamentos.'),
   async (req, res) => {
     const { id } = req.params;
 
@@ -664,7 +757,7 @@ router.delete(
       }
 
       const agendamentoExistente = await pool.query(
-        `SELECT id
+        `SELECT id, status
          FROM agendamentos
          WHERE id = $1`,
         [id]
@@ -676,21 +769,124 @@ router.delete(
         });
       }
 
+      const statusAtual = agendamentoExistente.rows[0].status;
+
+      if (statusAtual === 'cancelado') {
+        return res.status(400).json({
+          erro: 'Não é possível concluir este agendamento porque ele já está cancelado.'
+        });
+      }
+
+      if (statusAtual === 'concluido') {
+        return res.status(400).json({
+          erro: 'Não é possível concluir este agendamento porque ele já foi concluído.'
+        });
+      }
+
+      if (statusAtual === 'faltou') {
+        return res.status(400).json({
+          erro: 'Não é possível concluir este agendamento porque ele já foi marcado como falta.'
+        });
+      }
+
       const result = await pool.query(
-        `DELETE FROM agendamentos
+        `UPDATE agendamentos
+         SET status = 'concluido'
          WHERE id = $1
-         RETURNING id`,
+         RETURNING
+           id,
+           status,
+           TO_CHAR(
+             data_hora AT TIME ZONE 'America/Sao_Paulo',
+             'DD/MM/YYYY HH24:MI'
+           ) AS data_hora,
+           data_hora AS data_hora_iso`,
         [id]
       );
 
       return res.status(200).json({
-        mensagem: 'Agendamento deletado com sucesso.',
+        mensagem: 'Agendamento marcado como concluído com sucesso.',
         dados: result.rows[0]
       });
     } catch (error) {
-      console.error('Erro no DELETE /appointments/:id:', error.message);
+      console.error('Erro no PUT /appointments/:id/complete:', error.message);
       return res.status(500).json({
-        erro: 'Erro ao deletar agendamento. Tente novamente.'
+        erro: 'Erro ao concluir agendamento. Tente novamente.'
+      });
+    }
+  }
+);
+
+router.put(
+  '/appointments/:id/no-show',
+  auth,
+  authorize('admin', 'Acesso negado. Apenas administradores podem marcar falta em agendamentos.'),
+  async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      if (isNaN(Number(id))) {
+        return res.status(400).json({
+          erro: 'ID do agendamento inválido. Informe um identificador numérico válido.'
+        });
+      }
+
+      const agendamentoExistente = await pool.query(
+        `SELECT id, status
+         FROM agendamentos
+         WHERE id = $1`,
+        [id]
+      );
+
+      if (agendamentoExistente.rows.length === 0) {
+        return res.status(404).json({
+          erro: 'Agendamento não encontrado para o ID informado.'
+        });
+      }
+
+      const statusAtual = agendamentoExistente.rows[0].status;
+
+      if (statusAtual === 'cancelado') {
+        return res.status(400).json({
+          erro: 'Não é possível marcar falta porque este agendamento já está cancelado.'
+        });
+      }
+
+      if (statusAtual === 'concluido') {
+        return res.status(400).json({
+          erro: 'Não é possível marcar falta porque este agendamento já foi concluído.'
+        });
+      }
+
+      if (statusAtual === 'faltou') {
+        return res.status(400).json({
+          erro: 'Não é possível marcar falta porque este agendamento já está com status faltou.'
+        });
+      }
+
+      const result = await pool.query(
+        `UPDATE agendamentos
+         SET status = 'faltou'
+         WHERE id = $1
+         RETURNING
+           id,
+           status,
+           TO_CHAR(
+             data_hora AT TIME ZONE 'America/Sao_Paulo',
+             'DD/MM/YYYY HH24:MI'
+           ) AS data_hora,
+           data_hora AS data_hora_iso`,
+        [id]
+      );
+
+      return res.status(200).json({
+        mensagem: 'Agendamento marcado como falta com sucesso.',
+        dados: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Erro no PUT /appointments/:id/no-show:', error.message);
+      return res.status(500).json({
+        erro: 'Erro ao marcar falta no agendamento. Tente novamente.'
       });
     }
   }
