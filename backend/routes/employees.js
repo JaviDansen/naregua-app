@@ -3,6 +3,7 @@ const router = express.Router();
 
 const pool = require('../db');
 const auth = require('../middlewares/auth');
+const authorize = require('../middlewares/role');
 
 router.get('/employees', async (req, res) => {
   try {
@@ -30,9 +31,12 @@ router.get('/employees', async (req, res) => {
   }
 });
 
-router.post('/employees', auth, async (req, res) => {
+router.post(
+  '/employees',
+  auth,
+  authorize('admin', 'Acesso negado. Apenas administradores podem cadastrar funcionários.'),
+  async (req, res) => {
   const { nome, especialidade, telefone } = req.body;
-
   try {
     const result = await pool.query(
       `INSERT INTO funcionarios (nome, especialidade, telefone)

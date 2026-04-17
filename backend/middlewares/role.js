@@ -1,11 +1,13 @@
+function authorize(perfil, mensagemErro = 'Acesso negado.') {
+  return (req, res, next) => {
+    if (req.usuario.perfil !== perfil) {
+      return res.status(403).json({
+        erro: mensagemErro
+      });
+    }
 
-function authorize(role) {
-    return (req, res, next) => {
-        if (req.usuario.role !== role) {
-            return res.status(403).json({ message: "Acesso negado" });
-        }
-        next();
-    };
+    next();
+  };
 }
 
 module.exports = authorize;

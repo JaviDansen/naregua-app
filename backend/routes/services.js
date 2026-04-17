@@ -3,6 +3,7 @@ const router = express.Router();
 
 const pool = require('../db');
 const auth = require('../middlewares/auth');
+const authorize = require('../middlewares/role');
 
 router.get('/services', async (req, res) => {
   try {
@@ -22,7 +23,11 @@ router.get('/services', async (req, res) => {
   }
 });
 
-router.post('/services', auth, async (req, res) => {
+router.post(
+  '/services',
+  auth,
+  authorize('admin', 'Acesso negado. Apenas administradores podem cadastrar serviços.'),
+  async (req, res) => {
   const { nome, preco, duracao } = req.body;
 
   try {
