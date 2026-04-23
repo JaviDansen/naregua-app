@@ -1,6 +1,13 @@
 export const parseDate = (value) => {
   if (!value) return null;
 
+  // Caso seja data pura YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+
+    return new Date(year, month - 1, day);
+  }
+
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -117,4 +124,14 @@ export const isPastDateTime = (date, time) => {
   const now = new Date();
 
   return selectedDateTime.getTime() < now.getTime();
+};
+
+export const formatInputDate = (dateString) => {
+  if (!dateString) return '-';
+
+  const [year, month, day] = dateString.split('-');
+
+  if (!year || !month || !day) return '-';
+
+  return `${day}/${month}/${year}`;
 };

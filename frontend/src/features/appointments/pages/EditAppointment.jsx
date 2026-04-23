@@ -92,7 +92,7 @@ const EditAppointment = () => {
         return;
       }
 
-      const data_hora = `${selectedDate}T${selectedTime}:00`;
+      const data_hora = `${selectedDate}T${selectedTime}:00-03:00`;
 
       await updateAppointmentMutation.mutateAsync({
         id,
@@ -244,7 +244,7 @@ const EditAppointment = () => {
           Funcionário:{' '}
           {employeeOptions.find((e) => Number(e.value) === Number(selectedEmployee))?.label}
         </p>
-        <p>Data: {formatDate(selectedDate)}</p>
+        <p>Data: {formatInputDate(selectedDate)}</p>
         <p>Hora: {selectedTime}</p>
 
         <div className="flex justify-between mt-6">
