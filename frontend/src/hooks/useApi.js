@@ -19,6 +19,7 @@ export const useServices = () => {
 
 export const useCreateService = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: createService,
     onSuccess: () => {
@@ -36,6 +37,7 @@ export const useEmployees = () => {
 
 export const useCreateEmployee = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: createEmployee,
     onSuccess: () => {
@@ -44,21 +46,16 @@ export const useCreateEmployee = () => {
   });
 };
 
-export const useAppointment = (id) =>
-  useQuery({
-    queryKey: ['myAppointment', id],
-    queryFn: async () => {
-      const appointments = await getMyAppointments();
-
-      return appointments.find(...) || null; 
-        (appointment) => Number(appointment.id) === Number(id)
-      );
-    },
-    enabled: !!id,
+export const useAppointments = () => {
+  return useQuery({
+    queryKey: ['appointments'],
+    queryFn: getAppointments,
   });
+};
 
 export const useCreateAppointment = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: createAppointment,
     onSuccess: () => {
@@ -68,31 +65,38 @@ export const useCreateAppointment = () => {
   });
 };
 
-export const useMyAppointments = () =>
-  useQuery({
+export const useMyAppointments = () => {
+  return useQuery({
     queryKey: ['myAppointments'],
     queryFn: getMyAppointments,
   });
+};
 
-export const useAppointment = (id) =>
-  useQuery({
+export const useAppointment = (id) => {
+  return useQuery({
     queryKey: ['myAppointment', id],
     queryFn: async () => {
       const appointments = await getMyAppointments();
-      return appointments.find((appointment) => appointment.id === id);
+
+      return appointments.find(
+        (appointment) => Number(appointment.id) === Number(id)
+      ) || null;
     },
     enabled: !!id,
   });
+};
 
-export const useAvailability = ({ funcionarioId, date }) =>
-  useQuery({
+export const useAvailability = ({ funcionarioId, date }) => {
+  return useQuery({
     queryKey: ['availability', funcionarioId, date],
     queryFn: () => getAvailability({ funcionario_id: funcionarioId, data: date }),
     enabled: !!funcionarioId && !!date,
   });
+};
 
 export const useCancelAppointment = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: cancelAppointment,
     onSuccess: () => {
@@ -104,6 +108,7 @@ export const useCancelAppointment = () => {
 
 export const useUpdateAppointment = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({ id, data }) => updateAppointment(id, data),
     onSuccess: () => {
