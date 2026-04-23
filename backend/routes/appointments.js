@@ -57,13 +57,34 @@ function getSituacaoOperacional(status, dataHoraIso, duracaoServico) {
 
 // Criar agendamento
 router.post("/appointments", auth, async (req, res) => {
-  const { servico_id, funcionario_id, data_hora } = req.body;
-  const usuario_id = req.usuario.id;
+  const {
+    usuario_id: usuario_id_body,
+    servico_id,
+    funcionario_id,
+    data_hora,
+  } = req.body;
+
+  const usuario_id =
+    req.usuario.perfil === "admin" && usuario_id_body != null
+      ? Number(usuario_id_body)
+      : req.usuario.id;
 
   try {
     if (servico_id == null || funcionario_id == null || !data_hora) {
       return res.status(400).json({
         erro: "servico_id, funcionario_id e data_hora são obrigatórios",
+      });
+    }
+
+    if (req.usuario.perfil !== "admin" && usuario_id_body != null) {
+      return res.status(403).json({
+        erro: "Apenas administradores podem criar agendamentos para outros usuários.",
+      });
+    }
+
+    if (usuario_id_body != null && isNaN(Number(usuario_id_body))) {
+      return res.status(400).json({
+        erro: "usuario_id inválido. Informe um identificador numérico válido.",
       });
     }
 
@@ -208,9 +229,16 @@ router.post("/appointments", auth, async (req, res) => {
 });
 
 // Listar agendamentos
-router.get("/appointments", auth, async (req, res) => {
-  try {
-    const result = await pool.query(`
+router.get(
+  "/appointments",
+  auth,
+  authorize(
+    "admin",
+    "Acesso negado. Apenas administradores podem visualizar todos os agendamentos.",
+  ),
+  async (req, res) => {
+    try {
+      const result = await pool.query(`
       SELECT
         a.id,
         a.usuario_id,
@@ -236,26 +264,27 @@ router.get("/appointments", auth, async (req, res) => {
       ORDER BY a.data_hora ASC
     `);
 
-    const dados = result.rows.map((item) => ({
-      ...item,
-      duracao_servico: Number(item.duracao_servico),
-      situacao_operacional: getSituacaoOperacional(
-        item.status,
-        item.data_hora,
-        item.duracao_servico,
-      ),
-    }));
+      const dados = result.rows.map((item) => ({
+        ...item,
+        duracao_servico: Number(item.duracao_servico),
+        situacao_operacional: getSituacaoOperacional(
+          item.status,
+          item.data_hora,
+          item.duracao_servico,
+        ),
+      }));
 
-    return res.status(200).json({
-      dados,
-    });
-  } catch (error) {
-    console.error("Erro no GET /appointments:", error.message);
-    return res.status(500).json({
-      erro: "Erro ao buscar agendamentos",
-    });
-  }
-});
+      return res.status(200).json({
+        dados,
+      });
+    } catch (error) {
+      console.error("Erro no GET /appointments:", error.message);
+      return res.status(500).json({
+        erro: "Erro ao buscar agendamentos",
+      });
+    }
+  },
+);
 
 // Cancelar agendamento
 router.put("/appointments/:id/cancel", auth, async (req, res) => {
@@ -269,7 +298,7 @@ router.put("/appointments/:id/cancel", auth, async (req, res) => {
     }
 
     const agendamentoExistente = await pool.query(
-      `SELECT id, status
+      `SELECT id, status, usuario_id
        FROM agendamentos
        WHERE id = $1`,
       [id],
@@ -281,7 +310,18 @@ router.put("/appointments/:id/cancel", auth, async (req, res) => {
       });
     }
 
-    if (agendamentoExistente.rows[0].status === "cancelado") {
+    const agendamento = agendamentoExistente.rows[0];
+
+    if (
+      req.usuario.perfil !== "admin" &&
+      Number(agendamento.usuario_id) !== Number(req.usuario.id)
+    ) {
+      return res.status(403).json({
+        erro: "Você não tem permissão para cancelar este agendamento.",
+      });
+    }
+
+    if (agendamento.status === "cancelado") {
       return res.status(400).json({
         erro: "Esse agendamento já está cancelado",
       });
@@ -321,10 +361,10 @@ router.put("/appointments/:id/cancel", auth, async (req, res) => {
 router.put("/appointments/:id", auth, async (req, res) => {
   const { id } = req.params;
   const { servico_id, funcionario_id, data_hora } = req.body;
-  const usuario_id = req.usuario.id;
+  const usuario_logado_id = req.usuario.id;
 
   try {
-    if (!usuario_id || !servico_id || !funcionario_id || !data_hora) {
+    if (!usuario_logado_id || !servico_id || !funcionario_id || !data_hora) {
       return res.status(400).json({
         erro: "servico_id, funcionario_id e data_hora são obrigatórios",
       });
@@ -381,7 +421,7 @@ router.put("/appointments/:id", auth, async (req, res) => {
     }
 
     const agendamentoExistente = await pool.query(
-      `SELECT id, status
+      `SELECT id, status, usuario_id
        FROM agendamentos
        WHERE id = $1`,
       [id],
@@ -393,20 +433,20 @@ router.put("/appointments/:id", auth, async (req, res) => {
       });
     }
 
-    if (agendamentoExistente.rows[0].status === "cancelado") {
-      return res.status(400).json({
-        erro: "Não é possível editar um agendamento cancelado",
+    const agendamento = agendamentoExistente.rows[0];
+
+    if (
+      req.usuario.perfil !== "admin" &&
+      Number(agendamento.usuario_id) !== Number(req.usuario.id)
+    ) {
+      return res.status(403).json({
+        erro: "Você não tem permissão para editar este agendamento.",
       });
     }
 
-    const usuarioExiste = await pool.query(
-      `SELECT id FROM usuarios WHERE id = $1`,
-      [usuario_id],
-    );
-
-    if (usuarioExiste.rows.length === 0) {
-      return res.status(404).json({
-        erro: "Usuário não encontrado",
+    if (agendamento.status === "cancelado") {
+      return res.status(400).json({
+        erro: "Não é possível editar um agendamento cancelado",
       });
     }
 
@@ -485,7 +525,7 @@ router.put("/appointments/:id", auth, async (req, res) => {
            criado_em AT TIME ZONE 'America/Sao_Paulo',
            'YYYY-MM-DD"T"HH24:MI:SS'
          ) || '-03:00' AS criado_em`,
-      [usuario_id, servico_id, funcionario_id, data_hora, id],
+      [agendamento.usuario_id, servico_id, funcionario_id, data_hora, id],
     );
 
     return res.status(200).json({
