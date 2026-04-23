@@ -147,14 +147,18 @@ const NewAppointment = () => {
                     onChange={(e) => {
                       const selected = e.target.value;
 
-                      if (selected < getMinDateInputValue()) {
-                        alert("Não é possível selecionar uma data passada.");
-                        setSelectedDate("");
-                        setSelectedTime("");
+                      setSelectedDate(selected);
+                      setSelectedTime("");
+
+                      if (!/^\d{4}-\d{2}-\d{2}$/.test(selected)) {
                         return;
                       }
 
-                      setSelectedDate(selected);
+                      if (selected < getMinDateInputValue()) {
+                        alert("Não é possível selecionar uma data passada.");
+                        setSelectedDate("");
+                        return;
+                      }
                     }}
                     className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 focus:outline-none focus:border-blue-500 text-white"
                     min={getMinDateInputValue()}
