@@ -50,7 +50,7 @@ export const useAppointment = (id) =>
     queryFn: async () => {
       const appointments = await getMyAppointments();
 
-      return appointments.find(...) || null;
+      return appointments.find(...) || null; 
         (appointment) => Number(appointment.id) === Number(id)
       );
     },
