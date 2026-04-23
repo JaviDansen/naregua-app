@@ -3,10 +3,11 @@ const router = express.Router();
 
 const pool = require('../db');
 const bcrypt = require('bcrypt');
+const auth = require('../middlewares/auth');
+const authorize = require('../middlewares/role');
 
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
-
 router.post('/register', async (req, res) => {
   const { nome, email, senha } = req.body;
 
@@ -113,7 +114,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.get('/users', async (req, res) => {
+router.get(
+  '/users',
+  auth,
+  authorize('admin', 'Acesso negado. Apenas administradores podem visualizar usuários.'),
+  async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, nome, email
