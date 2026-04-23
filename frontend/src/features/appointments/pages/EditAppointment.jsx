@@ -15,7 +15,6 @@ import Select from '../../../components/ui/Select';
 import Modal from '../../../components/ui/Modal';
 import TimeSlotPicker from '../components/TimeSlotPicker';
 import {
-  formatDate,
   getDateInputValueFromIso,
   getMinDateInputValue,
   getTimeInputValueFromIso,
