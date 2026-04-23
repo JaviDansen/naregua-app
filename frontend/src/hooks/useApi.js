@@ -44,12 +44,18 @@ export const useCreateEmployee = () => {
   });
 };
 
-export const useAppointments = () => {
-  return useQuery({
-    queryKey: ['appointments'],
-    queryFn: getAppointments,
+export const useAppointment = (id) =>
+  useQuery({
+    queryKey: ['myAppointment', id],
+    queryFn: async () => {
+      const appointments = await getMyAppointments();
+
+      return appointments.find(...) || null;
+        (appointment) => Number(appointment.id) === Number(id)
+      );
+    },
+    enabled: !!id,
   });
-};
 
 export const useCreateAppointment = () => {
   const queryClient = useQueryClient();
