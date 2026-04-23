@@ -185,13 +185,13 @@ router.post("/appointments", auth, async (req, res) => {
          funcionario_id,
          TO_CHAR(
            data_hora AT TIME ZONE 'America/Sao_Paulo',
-           'DD/MM/YYYY HH24:MI'
-         ) AS data_hora,
+           'YYYY-MM-DD"T"HH24:MI:SS'
+         ) || '-03:00' AS data_hora,
          status,
          TO_CHAR(
            criado_em AT TIME ZONE 'America/Sao_Paulo',
-           'DD/MM/YYYY HH24:MI'
-         ) AS criado_em`,
+           'YYYY-MM-DD"T"HH24:MI:SS'
+         ) || '-03:00' AS criado_em`,
       [usuario_id, servico_id, funcionario_id, data_hora],
     );
 
@@ -222,14 +222,13 @@ router.get("/appointments", auth, async (req, res) => {
         f.nome AS funcionario,
         TO_CHAR(
           a.data_hora AT TIME ZONE 'America/Sao_Paulo',
-          'DD/MM/YYYY HH24:MI'
-        ) AS data_hora,
-        a.data_hora AS data_hora_iso,
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '-03:00' AS data_hora,
         a.status,
         TO_CHAR(
           a.criado_em AT TIME ZONE 'America/Sao_Paulo',
-          'DD/MM/YYYY HH24:MI'
-        ) AS criado_em
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '-03:00' AS criado_em
       FROM agendamentos a
       INNER JOIN usuarios u ON a.usuario_id = u.id
       INNER JOIN servicos s ON a.servico_id = s.id
@@ -242,17 +241,13 @@ router.get("/appointments", auth, async (req, res) => {
       duracao_servico: Number(item.duracao_servico),
       situacao_operacional: getSituacaoOperacional(
         item.status,
-        item.data_hora_iso,
+        item.data_hora,
         item.duracao_servico,
       ),
     }));
 
     return res.status(200).json({
       dados,
-    });
-
-    return res.status(200).json({
-      dados: result.rows,
     });
   } catch (error) {
     console.error("Erro no GET /appointments:", error.message);
@@ -301,12 +296,12 @@ router.put("/appointments/:id/cancel", auth, async (req, res) => {
          status,
          TO_CHAR(
            data_hora AT TIME ZONE 'America/Sao_Paulo',
-           'DD/MM/YYYY HH24:MI'
-         ) AS data_hora,
+           'YYYY-MM-DD"T"HH24:MI:SS'
+         ) || '-03:00' AS data_hora,
          TO_CHAR(
            criado_em AT TIME ZONE 'America/Sao_Paulo',
-           'DD/MM/YYYY HH24:MI'
-         ) AS criado_em`,
+           'YYYY-MM-DD"T"HH24:MI:SS'
+         ) || '-03:00' AS criado_em`,
       [id],
     );
 
@@ -483,13 +478,13 @@ router.put("/appointments/:id", auth, async (req, res) => {
          funcionario_id,
          TO_CHAR(
            data_hora AT TIME ZONE 'America/Sao_Paulo',
-           'DD/MM/YYYY HH24:MI'
-         ) AS data_hora,
+           'YYYY-MM-DD"T"HH24:MI:SS'
+         ) || '-03:00' AS data_hora,
          status,
          TO_CHAR(
            criado_em AT TIME ZONE 'America/Sao_Paulo',
-           'DD/MM/YYYY HH24:MI'
-         ) AS criado_em`,
+           'YYYY-MM-DD"T"HH24:MI:SS'
+         ) || '-03:00' AS criado_em`,
       [usuario_id, servico_id, funcionario_id, data_hora, id],
     );
 
@@ -508,7 +503,7 @@ router.put("/appointments/:id", auth, async (req, res) => {
 // Meus agendamentos
 router.get("/my-appointments", auth, async (req, res) => {
   const usuario_id = req.usuario.id;
-  
+
   try {
     const result = await pool.query(
       `SELECT
@@ -520,10 +515,9 @@ router.get("/my-appointments", auth, async (req, res) => {
         f.nome AS funcionario,
         TO_CHAR(
           a.data_hora AT TIME ZONE 'America/Sao_Paulo',
-          'DD/MM/YYYY HH24:MI'
-        ) AS data_hora,
-        a.status,
-        a.data_hora AS data_hora_iso
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '-03:00' AS data_hora,
+        a.status
       FROM agendamentos a
       INNER JOIN servicos s ON a.servico_id = s.id
       INNER JOIN funcionarios f ON a.funcionario_id = f.id
@@ -537,7 +531,7 @@ router.get("/my-appointments", auth, async (req, res) => {
       duracao_servico: Number(item.duracao_servico),
       situacao_operacional: getSituacaoOperacional(
         item.status,
-        item.data_hora_iso,
+        item.data_hora,
         item.duracao_servico,
       ),
     }));
@@ -803,9 +797,8 @@ router.put(
            status,
            TO_CHAR(
              data_hora AT TIME ZONE 'America/Sao_Paulo',
-             'DD/MM/YYYY HH24:MI'
-           ) AS data_hora,
-           data_hora AS data_hora_iso`,
+             'YYYY-MM-DD"T"HH24:MI:SS'
+           ) || '-03:00' AS data_hora`,
         [id],
       );
 
@@ -882,9 +875,8 @@ router.put(
            status,
            TO_CHAR(
              data_hora AT TIME ZONE 'America/Sao_Paulo',
-             'DD/MM/YYYY HH24:MI'
-           ) AS data_hora,
-           data_hora AS data_hora_iso`,
+             'YYYY-MM-DD"T"HH24:MI:SS'
+           ) || '-03:00' AS data_hora`,
         [id],
       );
 
