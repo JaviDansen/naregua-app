@@ -15,8 +15,8 @@ router.get('/employees', async (req, res) => {
         telefone,
         TO_CHAR(
           criado_em AT TIME ZONE 'America/Sao_Paulo',
-          'DD/MM/YYYY HH24:MI'
-        ) AS criado_em
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '-03:00' AS criado_em
       FROM funcionarios
     `);
 
@@ -39,17 +39,17 @@ router.post(
   const { nome, especialidade, telefone } = req.body;
   try {
     const result = await pool.query(
-      `INSERT INTO funcionarios (nome, especialidade, telefone)
-       VALUES ($1, $2, $3)
-       RETURNING
-         id,
-         nome,
-         especialidade,
-         telefone,
-         TO_CHAR(
-           criado_em AT TIME ZONE 'America/Sao_Paulo',
-           'DD/MM/YYYY HH24:MI'
-         ) AS criado_em`,
+    `INSERT INTO funcionarios (nome, especialidade, telefone)
+      VALUES ($1, $2, $3)
+      RETURNING
+        id,
+        nome,
+        especialidade,
+        telefone,
+        TO_CHAR(
+          criado_em AT TIME ZONE 'America/Sao_Paulo',
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '-03:00' AS criado_em`,
       [nome, especialidade, telefone]
     );
 
@@ -98,18 +98,18 @@ router.put(
       }
 
       const result = await pool.query(
-        `UPDATE funcionarios
-         SET nome = $1, especialidade = $2, telefone = $3
-         WHERE id = $4
-         RETURNING
-           id,
-           nome,
-           especialidade,
-           telefone,
-           TO_CHAR(
-             criado_em AT TIME ZONE 'America/Sao_Paulo',
-             'DD/MM/YYYY HH24:MI'
-           ) AS criado_em`,
+      `UPDATE funcionarios
+        SET nome = $1, especialidade = $2, telefone = $3
+        WHERE id = $4
+        RETURNING
+          id,
+          nome,
+          especialidade,
+          telefone,
+          TO_CHAR(
+            criado_em AT TIME ZONE 'America/Sao_Paulo',
+            'YYYY-MM-DD"T"HH24:MI:SS'
+          ) || '-03:00' AS criado_em`,
         [nome, especialidade, telefone, id]
       );
 
