@@ -42,6 +42,13 @@ const NewAppointment = () => {
   }, [selectedDate, selectedEmployee, selectedService]);
 
   const handleNext = () => {
+    if (step === 3 && selectedDate < getMinDateInputValue()) {
+      alert('Não é possível selecionar uma data passada.');
+      setSelectedDate('');
+      setSelectedTime('');
+      return;
+    }
+
     if (step < 4) setStep(step + 1);
   };
 
@@ -145,20 +152,8 @@ const NewAppointment = () => {
                     type="date"
                     value={selectedDate}
                     onChange={(e) => {
-                      const selected = e.target.value;
-
-                      setSelectedDate(selected);
+                      setSelectedDate(e.target.value);
                       setSelectedTime("");
-
-                      if (!/^\d{4}-\d{2}-\d{2}$/.test(selected)) {
-                        return;
-                      }
-
-                      if (selected < getMinDateInputValue()) {
-                        alert("Não é possível selecionar uma data passada.");
-                        setSelectedDate("");
-                        return;
-                      }
                     }}
                     className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 focus:outline-none focus:border-blue-500 text-white"
                     min={getMinDateInputValue()}
