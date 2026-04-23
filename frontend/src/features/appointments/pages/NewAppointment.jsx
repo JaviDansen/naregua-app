@@ -25,17 +25,9 @@ const NewAppointment = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const serviceOptions =
-<<<<<<< HEAD
-  services?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
+    services?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
   const employeeOptions =
-  employees?.map((e) => ({ value: e.id, label: e.nome })) || [];
-=======
-    services?.data?.map((s) => ({
-      value: s.id,
-      label: s.nome,
-      duracao: s.duracao,
-    })) || [];
->>>>>>> 8ee0ff0dc2dd4805a66416965d6c70351e85d4ca
+    employees?.map((e) => ({ value: e.id, label: e.nome })) || [];
 
   const employeeOptions =
     employees?.data?.map((e) => ({

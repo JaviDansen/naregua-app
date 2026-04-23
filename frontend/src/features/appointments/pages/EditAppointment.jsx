@@ -37,27 +37,10 @@ const EditAppointment = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const serviceOptions =
-<<<<<<< HEAD
-  services?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
+    services?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
   const employeeOptions =
-  employees?.data?.map((e) => ({ value: e.id, label: e.nome })) || [];
+    employees?.data?.map((e) => ({ value: e.id, label: e.nome })) || [];
   const selectedServiceDuration = serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
-=======
-    services?.data?.map((s) => ({
-      value: s.id,
-      label: s.nome,
-      duracao: s.duracao,
-    })) || [];
-
-  const employeeOptions =
-    employees?.data?.map((e) => ({
-      value: e.id,
-      label: e.nome,
-    })) || [];
-
-  const selectedServiceDuration =
-    serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
->>>>>>> 8ee0ff0dc2dd4805a66416965d6c70351e85d4ca
 
   useEffect(() => {
     if (appointment) {
