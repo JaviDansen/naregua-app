@@ -87,7 +87,7 @@ const EditAppointment = () => {
   const handleConfirm = async () => {
     try {
       if (isPastDateTime(selectedDate, selectedTime)) {
-        alert("Selecione uma data e horário futuros para o agendamento.");
+        alert('Selecione uma data e horário futuros para o agendamento.');
         return;
       }
 
@@ -102,10 +102,17 @@ const EditAppointment = () => {
         },
       });
 
-      navigate("/dashboard");
+      navigate('/dashboard');
     } catch (error) {
-      console.error("Erro ao atualizar agendamento:", error);
-      alert(error.response?.data?.mensagem || "Erro ao atualizar agendamento.");
+      console.error('Erro ao atualizar agendamento:', error);
+
+      const message =
+        error.response?.data?.mensagem ||
+        error.response?.data?.erro ||
+        error.response?.data?.message ||
+        'Erro ao atualizar agendamento.';
+
+      alert(message);
     }
   };
   
@@ -151,7 +158,9 @@ const EditAppointment = () => {
         <Navbar />
 
         <div className="p-6 pb-20 md:pb-6 max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6 text-center">Editar Agendamento</h1>
+          <h1 className="text-2xl font-bold mb-6 text-center">
+            Editar Agendamento
+          </h1>
 
           <Card>
             {step === 1 && (
@@ -169,7 +178,9 @@ const EditAppointment = () => {
 
             {step === 2 && (
               <div>
-                <h2 className="text-xl mb-4">Passo 2: Selecione o Funcionário</h2>
+                <h2 className="text-xl mb-4">
+                  Passo 2: Selecione o Funcionário
+                </h2>
                 <Select
                   label="Funcionário"
                   value={selectedEmployee}
@@ -184,11 +195,24 @@ const EditAppointment = () => {
               <div>
                 <h2 className="text-xl mb-4">Passo 3: Selecione a Data</h2>
                 <div className="mb-4">
-                  <label className="block text-sm mb-1 text-zinc-400">Data</label>
+                  <label className="block text-sm mb-1 text-zinc-400">
+                    Data
+                  </label>
                   <input
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => {
+                      const selected = e.target.value;
+
+                      if (selected < getMinDateInputValue()) {
+                        alert("Não é possível selecionar uma data passada.");
+                        setSelectedDate("");
+                        setSelectedTime("");
+                        return;
+                      }
+
+                      setSelectedDate(selected);
+                    }}
                     className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 focus:outline-none focus:border-blue-500 text-white"
                     min={getMinDateInputValue()}
                     required
@@ -222,7 +246,10 @@ const EditAppointment = () => {
                   Próximo
                 </Button>
               ) : (
-                <Button onClick={() => setIsConfirmModalOpen(true)} disabled={!canProceed()}>
+                <Button
+                  onClick={() => setIsConfirmModalOpen(true)}
+                  disabled={!canProceed()}
+                >
                   Salvar alterações
                 </Button>
               )}
@@ -233,25 +260,42 @@ const EditAppointment = () => {
         <MobileNav />
       </div>
 
-      <Modal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)}>
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+      >
         <h2 className="text-xl font-bold mb-4">Confirmar Alterações</h2>
         <p>
-          Serviço:{' '}
-          {serviceOptions.find((s) => Number(s.value) === Number(selectedService))?.label}
+          Serviço:{" "}
+          {
+            serviceOptions.find(
+              (s) => Number(s.value) === Number(selectedService),
+            )?.label
+          }
         </p>
         <p>
-          Funcionário:{' '}
-          {employeeOptions.find((e) => Number(e.value) === Number(selectedEmployee))?.label}
+          Funcionário:{" "}
+          {
+            employeeOptions.find(
+              (e) => Number(e.value) === Number(selectedEmployee),
+            )?.label
+          }
         </p>
         <p>Data: {formatInputDate(selectedDate)}</p>
         <p>Hora: {selectedTime}</p>
 
         <div className="flex justify-between mt-6">
-          <Button variant="secondary" onClick={() => setIsConfirmModalOpen(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => setIsConfirmModalOpen(false)}
+          >
             Cancelar
           </Button>
 
-          <Button onClick={handleConfirm} loading={updateAppointmentMutation.isPending}>
+          <Button
+            onClick={handleConfirm}
+            loading={updateAppointmentMutation.isPending}
+          >
             Salvar alterações
           </Button>
         </div>
