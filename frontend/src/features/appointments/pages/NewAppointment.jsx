@@ -23,8 +23,10 @@ const NewAppointment = () => {
   const [selectedTime, setSelectedTime] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-  const serviceOptions = services?.data?.map(s => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
-  const employeeOptions = employees?.data?.map(e => ({ value: e.id, label: e.nome })) || [];
+  const serviceOptions =
+  services?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
+  const employeeOptions =
+  employees?.map((e) => ({ value: e.id, label: e.nome })) || [];
 
   const selectedServiceDuration = serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
 
