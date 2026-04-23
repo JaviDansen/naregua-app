@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useServices, useEmployees, useAppointment, useUpdateAppointment } from '../../../hooks/useApi';
+import {
+  useServices,
+  useEmployees,
+  useAppointment,
+  useUpdateAppointment,
+} from '../../../hooks/useApi';
 import Sidebar from '../../../components/layout/Sidebar';
 import Navbar from '../../../components/layout/Navbar';
 import MobileNav from '../../../components/layout/MobileNav';
@@ -9,6 +14,12 @@ import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import Modal from '../../../components/ui/Modal';
 import TimeSlotPicker from '../components/TimeSlotPicker';
+import {
+  formatDate,
+  getDateInputValueFromIso,
+  getMinDateInputValue,
+  getTimeInputValueFromIso,
+} from '../../../utils/formatDate';
 
 const EditAppointment = () => {
   const { id } = useParams();
@@ -25,17 +36,30 @@ const EditAppointment = () => {
   const [selectedTime, setSelectedTime] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-  const serviceOptions = services?.data?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
-  const employeeOptions = employees?.data?.map((e) => ({ value: e.id, label: e.nome })) || [];
-  const selectedServiceDuration = serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
+  const serviceOptions =
+    services?.data?.map((s) => ({
+      value: s.id,
+      label: s.nome,
+      duracao: s.duracao,
+    })) || [];
+
+  const employeeOptions =
+    employees?.data?.map((e) => ({
+      value: e.id,
+      label: e.nome,
+    })) || [];
+
+  const selectedServiceDuration =
+    serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
 
   useEffect(() => {
     if (appointment) {
       setSelectedService(appointment.servico_id || '');
       setSelectedEmployee(appointment.funcionario_id || '');
-      if (appointment.data_hora_iso) {
-        setSelectedDate(appointment.data_hora_iso.slice(0, 10));
-        setSelectedTime(appointment.data_hora_iso.slice(11, 16));
+
+      if (appointment.data_hora) {
+        setSelectedDate(getDateInputValueFromIso(appointment.data_hora));
+        setSelectedTime(getTimeInputValueFromIso(appointment.data_hora));
       }
     }
   }, [appointment]);
@@ -43,6 +67,22 @@ const EditAppointment = () => {
   useEffect(() => {
     setSelectedTime('');
   }, [selectedDate, selectedEmployee, selectedService]);
+
+  useEffect(() => {
+    if (appointment?.data_hora && selectedDate && selectedEmployee && selectedService) {
+      const originalDate = getDateInputValueFromIso(appointment.data_hora);
+      const originalEmployee = String(appointment.funcionario_id || '');
+      const originalService = String(appointment.servico_id || '');
+
+      const changedDate = selectedDate !== originalDate;
+      const changedEmployee = String(selectedEmployee) !== originalEmployee;
+      const changedService = String(selectedService) !== originalService;
+
+      if (changedDate || changedEmployee || changedService) {
+        setSelectedTime('');
+      }
+    }
+  }, [appointment, selectedDate, selectedEmployee, selectedService]);
 
   const handleNext = () => {
     if (step < 4) setStep(step + 1);
@@ -54,6 +94,7 @@ const EditAppointment = () => {
 
   const handleConfirm = async () => {
     const data_hora = `${selectedDate}T${selectedTime}:00`;
+
     await updateAppointmentMutation.mutateAsync({
       id,
       data: {
@@ -62,6 +103,7 @@ const EditAppointment = () => {
         data_hora,
       },
     });
+
     navigate('/dashboard');
   };
 
@@ -102,8 +144,10 @@ const EditAppointment = () => {
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
       <Sidebar />
+
       <div className="flex-1">
         <Navbar />
+
         <div className="p-6 pb-20 md:pb-6 max-w-2xl mx-auto">
           <h1 className="text-2xl font-bold mb-6 text-center">Editar Agendamento</h1>
 
@@ -144,7 +188,7 @@ const EditAppointment = () => {
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                     className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 focus:outline-none focus:border-blue-500 text-white"
-                    min={new Date().toISOString().split('T')[0]}
+                    min={getMinDateInputValue()}
                     required
                   />
                 </div>
@@ -170,6 +214,7 @@ const EditAppointment = () => {
                   Voltar
                 </Button>
               )}
+
               {step < 4 ? (
                 <Button onClick={handleNext} disabled={!canProceed()}>
                   Próximo
@@ -182,6 +227,7 @@ const EditAppointment = () => {
             </div>
           </Card>
         </div>
+
         <MobileNav />
       </div>
 
@@ -189,12 +235,14 @@ const EditAppointment = () => {
         <h2 className="text-xl font-bold mb-4">Confirmar Alterações</h2>
         <p>Serviço: {serviceOptions.find((s) => s.value === selectedService)?.label}</p>
         <p>Funcionário: {employeeOptions.find((e) => e.value === selectedEmployee)?.label}</p>
-        <p>Data: {selectedDate}</p>
+        <p>Data: {formatDate(selectedDate)}</p>
         <p>Hora: {selectedTime}</p>
+
         <div className="flex justify-between mt-6">
           <Button variant="secondary" onClick={() => setIsConfirmModalOpen(false)}>
             Cancelar
           </Button>
+
           <Button onClick={handleConfirm} loading={updateAppointmentMutation.isPending}>
             Salvar alterações
           </Button>
