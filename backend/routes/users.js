@@ -113,7 +113,11 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.get('/users', async (req, res) => {
+router.get(
+  '/users',
+  auth,
+  authorize('admin', 'Acesso negado. Apenas administradores podem visualizar usuários.'),
+  async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, nome, email

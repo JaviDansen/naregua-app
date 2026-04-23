@@ -11,13 +11,7 @@ router.get('/employees', async (req, res) => {
       SELECT
         id,
         nome,
-        especialidade,
-        telefone,
-        TO_CHAR(
-          criado_em AT TIME ZONE 'America/Sao_Paulo',
-          'YYYY-MM-DD"T"HH24:MI:SS'
-        ) || '-03:00' AS criado_em
-      FROM funcionarios
+        especialidade
     `);
 
     return res.status(200).json({
