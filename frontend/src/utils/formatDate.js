@@ -109,3 +109,12 @@ export const getTimeInputValueFromIso = (dateString) => {
 
   return `${hour}:${minute}`;
 };
+
+export const isPastDateTime = (date, time) => {
+  if (!date || !time) return true;
+
+  const selectedDateTime = new Date(`${date}T${time}:00`);
+  const now = new Date();
+
+  return selectedDateTime.getTime() < now.getTime();
+};

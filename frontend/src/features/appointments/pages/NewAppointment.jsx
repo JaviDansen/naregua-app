@@ -9,7 +9,11 @@ import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import Modal from '../../../components/ui/Modal';
 import TimeSlotPicker from '../components/TimeSlotPicker';
-import { formatDate, getMinDateInputValue } from '../../../utils/formatDate';
+import {
+  formatDate,
+  getMinDateInputValue,
+  isPastDateTime,
+} from '../../../utils/formatDate';
 
 const NewAppointment = () => {
   const navigate = useNavigate();
@@ -29,7 +33,7 @@ const NewAppointment = () => {
 
   const employeeOptions =
     employees?.map((e) => ({ value: e.id, label: e.nome })) || [];
-    
+
   const selectedServiceDuration =
     serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
 
@@ -46,15 +50,25 @@ const NewAppointment = () => {
   };
 
   const handleConfirm = async () => {
-    const data_hora = `${selectedDate}T${selectedTime}:00`;
+    try {
+      if (isPastDateTime(selectedDate, selectedTime)) {
+        alert("Selecione uma data e horário futuros para o agendamento.");
+        return;
+      }
 
-    await createAppointmentMutation.mutateAsync({
-      servico_id: selectedService,
-      funcionario_id: selectedEmployee,
-      data_hora,
-    });
+      const data_hora = `${selectedDate}T${selectedTime}:00`;
 
-    navigate('/dashboard');
+      await createAppointmentMutation.mutateAsync({
+        servico_id: Number(selectedService),
+        funcionario_id: Number(selectedEmployee),
+        data_hora,
+      });
+
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Erro ao criar agendamento:", error);
+      alert(error.response?.data?.mensagem || "Erro ao criar agendamento.");
+    }
   };
 
   const canProceed = () => {
@@ -164,8 +178,14 @@ const NewAppointment = () => {
 
       <Modal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)}>
         <h2 className="text-xl font-bold mb-4">Confirmar Agendamento</h2>
-        <p>Serviço: {serviceOptions.find((s) => s.value === selectedService)?.label}</p>
-        <p>Funcionário: {employeeOptions.find((e) => e.value === selectedEmployee)?.label}</p>
+        <p>
+          Serviço:{' '}
+          {serviceOptions.find((s) => Number(s.value) === Number(selectedService))?.label}
+        </p>
+        <p>
+          Funcionário:{' '}
+          {employeeOptions.find((e) => Number(e.value) === Number(selectedEmployee))?.label}
+        </p>
         <p>Data: {formatDate(selectedDate)}</p>
         <p>Hora: {selectedTime}</p>
 
