@@ -7,23 +7,39 @@ const authorize = require("../middlewares/role");
 
 function getDayOfWeekAndTimeInSaoPaulo(dataHora) {
   const [dataParte, horaParte] = dataHora.split("T");
-
-  if (!dataParte || !horaParte) {
-    return null;
-  }
-
   const [ano, mes, dia] = dataParte.split("-").map(Number);
   const [hora, minuto] = horaParte.split(":").map(Number);
 
-  if ([ano, mes, dia, hora, minuto].some(Number.isNaN)) {
-    return null;
-  }
+  const dataLocal = new Date(ano, mes - 1, dia, hora, minuto);
 
-  const dataLocal = new Date(ano, mes - 1, dia);
+  const formatterDia = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    weekday: "short",
+  });
+
+  const formatterHora = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  const diaTexto = formatterDia.format(dataLocal);
+  const horario = formatterHora.format(dataLocal);
+
+  const mapaDias = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
 
   return {
-    day_of_week: dataLocal.getDay(),
-    horario: `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`,
+    day_of_week: mapaDias[diaTexto],
+    horario,
   };
 }
 
@@ -41,6 +57,21 @@ function getSituacaoOperacional(status, dataHoraIso, duracaoServico) {
   }
 
   return "normal";
+}
+
+function parseLocalDateTime(dataHora) {
+  const [dataParte, horaParte] = dataHora.split("T");
+
+  if (!dataParte || !horaParte) return null;
+
+  const [ano, mes, dia] = dataParte.split("-").map(Number);
+  const [hora, minuto] = horaParte.split(":").map(Number);
+
+  if ([ano, mes, dia, hora, minuto].some(Number.isNaN)) {
+    return null;
+  }
+
+  return new Date(ano, mes - 1, dia, hora, minuto, 0);
 }
 
 // Criar agendamento
@@ -76,13 +107,15 @@ router.post("/appointments", auth, async (req, res) => {
       });
     }
 
-    if (isNaN(Date.parse(data_hora))) {
+    const dataHoraLocal = parseLocalDateTime(data_hora);
+
+    if (!dataHoraLocal) {
       return res.status(400).json({
         erro: "data_hora inválida",
       });
     }
 
-    if (new Date(data_hora) < new Date()) {
+    if (dataHoraLocal < new Date()) {
       return res.status(400).json({
         erro: "Não é possível criar agendamento em data/hora passada",
       });
@@ -150,8 +183,9 @@ router.post("/appointments", auth, async (req, res) => {
       });
     }
 
-    const inicioNovoAgendamento = new Date(data_hora);
+    const inicioNovoAgendamento = new Date(dataHoraLocal);
     const fimNovoAgendamento = new Date(inicioNovoAgendamento);
+
     fimNovoAgendamento.setMinutes(
       fimNovoAgendamento.getMinutes() + duracaoNovoServico,
     );
@@ -175,7 +209,7 @@ router.post("/appointments", auth, async (req, res) => {
          AND a.status != 'cancelado'
          AND $2::timestamp < (a.data_hora + (s.duracao || ' minutes')::interval)
          AND $3::timestamp > a.data_hora`,
-      [funcionario_id, data_hora, fimNovoAgendamento.toISOString()],
+      [funcionario_id, inicioNovoAgendamento, fimNovoAgendamento],
     );
 
     if (conflitoHorario.rows.length > 0) {
@@ -201,7 +235,7 @@ router.post("/appointments", auth, async (req, res) => {
            criado_em AT TIME ZONE 'America/Sao_Paulo',
            'YYYY-MM-DD"T"HH24:MI:SS'
          ) || '-03:00' AS criado_em`,
-      [usuario_id, servico_id, funcionario_id, data_hora],
+      [usuario_id, servico_id, funcionario_id, dataHoraLocal],
     );
 
     return res.status(201).json({
