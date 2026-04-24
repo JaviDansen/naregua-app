@@ -8,6 +8,8 @@ import {
   getAvailability,
   cancelAppointment,
   updateAppointment,
+  completeAppointment,
+  noShowAppointment,
 } from '../api/appointments.api';
 
 export const useServices = () => {
@@ -115,6 +117,30 @@ export const useUpdateAppointment = () => {
 
   return useMutation({
     mutationFn: ({ id, data }) => updateAppointment(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
+    },
+  });
+};
+
+export const useCompleteAppointment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: completeAppointment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
+    },
+  });
+};
+
+export const useNoShowAppointment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: noShowAppointment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
