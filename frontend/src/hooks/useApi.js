@@ -86,13 +86,17 @@ export const useAppointment = (id) => {
   });
 };
 
-export const useAvailability = ({ funcionarioId, date }) => {
-  return useQuery({
-    queryKey: ['availability', funcionarioId, date],
-    queryFn: () => getAvailability({ funcionario_id: funcionarioId, data: date }),
-    enabled: !!funcionarioId && !!date,
+export const useAvailability = ({ funcionarioId, date, servicoId }) =>
+  useQuery({
+    queryKey: ['availability', funcionarioId, date, servicoId],
+    queryFn: () =>
+      getAvailability({
+        funcionario_id: funcionarioId,
+        data: date,
+        servico_id: servicoId,
+      }),
+    enabled: !!funcionarioId && !!date && !!servicoId,
   });
-};
 
 export const useCancelAppointment = () => {
   const queryClient = useQueryClient();

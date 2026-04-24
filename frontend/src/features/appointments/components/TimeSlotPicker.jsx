@@ -72,7 +72,6 @@ const TimeSlotPicker = ({
     date,
     servicoId: serviceId,
   });
-
   const businessHours = data?.horario_funcionamento;
   const occupiedAppointments = data?.agendamentos_ocupados || [];
   const intervalMinutes = data?.intervalo_base_minutos || 20;

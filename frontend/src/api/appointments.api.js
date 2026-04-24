@@ -10,10 +10,11 @@ export const getMyAppointments = async () => {
   return response.data.dados;
 };
 
-export const getAvailability = async ({ funcionario_id, data }) => {
+export const getAvailability = async ({ funcionario_id, data, servico_id }) => {
   const response = await api.get('/availability', {
-    params: { funcionario_id, data },
+    params: { funcionario_id, data, servico_id },
   });
+
   return response.data.dados;
 };
 
