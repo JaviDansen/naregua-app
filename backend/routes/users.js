@@ -8,6 +8,7 @@ const authorize = require('../middlewares/role');
 
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
+
 router.post('/register', async (req, res) => {
   const { nome, email, senha } = req.body;
 
