@@ -6,7 +6,18 @@ const auth = require("../middlewares/auth");
 const authorize = require("../middlewares/role");
 
 function getDayOfWeekAndTimeInSaoPaulo(dataHora) {
-  const data = new Date(dataHora);
+  const [dataParte, horaParte] = dataHora.split("T");
+  const [ano, mes, dia] = dataParte.split("-").map(Number);
+  const [hora, minuto] = horaParte.split(":");
+  const data = new Date(
+    ano,
+    mes - 1,
+    dia,
+    Number(hora),
+    Number(minuto)
+  );
+
+  const data = new Date(ano, mes - 1, dia, hora, minuto);
 
   const formatterDia = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Sao_Paulo",
