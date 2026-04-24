@@ -43,7 +43,12 @@ const EditAppointment = () => {
   const employeeOptions =
     employees?.map((e) => ({ value: e.id, label: e.nome })) || [];
     
-  const selectedServiceDuration = serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
+  const selectedServiceDuration =
+    Number(
+      serviceOptions.find(
+        (service) => Number(service.value) === Number(selectedService)
+      )?.duracao
+    ) || 30;
 
   useEffect(() => {
     if (appointment) {
@@ -56,10 +61,6 @@ const EditAppointment = () => {
       }
     }
   }, [appointment]);
-
-  useEffect(() => {
-    setSelectedTime('');
-  }, [selectedDate, selectedEmployee, selectedService]);
 
   useEffect(() => {
     if (appointment?.data_hora && selectedDate && selectedEmployee && selectedService) {

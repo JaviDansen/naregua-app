@@ -37,7 +37,11 @@ const NewAppointment = () => {
     employees?.map((e) => ({ value: e.id, label: e.nome })) || [];
 
   const selectedServiceDuration =
-    serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
+    Number(
+      serviceOptions.find(
+        (service) => Number(service.value) === Number(selectedService)
+      )?.duracao
+    ) || 30;
 
   useEffect(() => {
     setSelectedTime('');
