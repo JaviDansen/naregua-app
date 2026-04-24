@@ -5,49 +5,24 @@ import Navbar from '../../../components/layout/Navbar';
 import MobileNav from '../../../components/layout/MobileNav';
 import Card from '../../../components/ui/Card';
 import Skeleton from '../../../components/ui/Skeleton';
-import { formatDateTime } from '../../../utils/formatDate';
 
 const AdminDashboard = () => {
   const { data: appointments = [], isLoading } = useAppointments();
 
-  const today = new Date().toISOString().split('T')[0];
-
-  const appointmentsToday = appointments.filter((appt) =>
-    appt.data_hora?.startsWith(today)
-  );
-
-  const upcomingToday = appointmentsToday
-    .filter((appt) => new Date(appt.data_hora) >= new Date())
-    .sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora))
-    .slice(0, 5);
-
-  const pendingConfirmation = appointments.filter(
-    (appt) => appt.status === 'pendente de confirmação'
-  );
-
-  const completedToday = appointmentsToday.filter(
-    (appt) => appt.status === 'concluído' || appt.status === 'concluido'
-  );
-
-  const noShowToday = appointmentsToday.filter(
-    (appt) => appt.status === 'faltou'
-  );
-
-  const canceledToday = appointmentsToday.filter(
-    (appt) => appt.status === 'cancelado'
-  );
+  const now = new Date();
 
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const activeStatuses = ['agendado', 'pendente de confirmação'];
 
   const weeklyAppointments = appointments.filter(
     (appt) => new Date(appt.data_hora) >= sevenDaysAgo
   );
 
   const weeklyCompleted = weeklyAppointments.filter(
-    (appt) =>
-      appt.status === 'concluído' || appt.status === 'concluido'
+    (appt) => appt.status === 'concluido' || appt.status === 'concluído'
   );
 
   const weeklyNoShow = weeklyAppointments.filter(
@@ -58,15 +33,43 @@ const AdminDashboard = () => {
     (appt) => appt.status === 'cancelado'
   );
 
+  const futureAppointments = appointments.filter(
+    (appt) =>
+      activeStatuses.includes(appt.status) &&
+      new Date(appt.data_hora) >= now
+  );
+
+  const pendingConfirmation = appointments.filter(
+    (appt) => appt.status === 'pendente de confirmação'
+  );
+
   const attendanceBase =
-    weeklyCompleted.length +
-    weeklyNoShow.length +
-    weeklyCanceled.length;
+    weeklyCompleted.length + weeklyNoShow.length + weeklyCanceled.length;
 
   const attendanceRate =
     attendanceBase > 0
       ? Math.round((weeklyCompleted.length / attendanceBase) * 100)
       : 0;
+
+  const getMostFrequent = (items, field) => {
+    const counter = items.reduce((acc, item) => {
+      const value = item[field];
+
+      if (!value) return acc;
+
+      acc[value] = (acc[value] || 0) + 1;
+      return acc;
+    }, {});
+
+    const sorted = Object.entries(counter).sort((a, b) => b[1] - a[1]);
+
+    return sorted.length > 0
+      ? { name: sorted[0][0], total: sorted[0][1] }
+      : { name: 'Sem dados', total: 0 };
+  };
+
+  const mostBookedService = getMostFrequent(appointments, 'servico');
+  const mostRequestedEmployee = getMostFrequent(appointments, 'funcionario');
 
   const weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -86,36 +89,43 @@ const AdminDashboard = () => {
     };
   });
 
-  const dashboardCards = [
+  const maxChartValue = Math.max(...weeklyChart.map((day) => day.total), 1);
+
+  const strategicCards = [
     {
-      title: 'Agendados hoje',
-      value: appointmentsToday.length,
-      icon: '📅',
-      border: 'border-blue-500/40',
-    },
-    {
-      title: 'Pendentes confirmação',
-      value: pendingConfirmation.length,
-      icon: '🟡',
-      border: 'border-yellow-500/40',
-    },
-    {
-      title: 'Concluídos hoje',
-      value: completedToday.length,
-      icon: '✅',
+      title: 'Atendimentos na semana',
+      value: weeklyCompleted.length,
+      description: 'Agendamentos concluídos',
       border: 'border-green-500/40',
+      text: 'text-green-300',
     },
     {
-      title: 'Faltas hoje',
-      value: noShowToday.length,
-      icon: '⚠️',
+      title: 'Comparecimento',
+      value: `${attendanceRate}%`,
+      description: 'Baseado na semana',
+      border: 'border-blue-500/40',
+      text: 'text-blue-300',
+    },
+    {
+      title: 'Faltas na semana',
+      value: weeklyNoShow.length,
+      description: 'Clientes que não compareceram',
       border: 'border-red-500/40',
+      text: 'text-red-300',
     },
     {
-      title: 'Cancelados hoje',
-      value: canceledToday.length,
-      icon: '🚫',
+      title: 'Cancelamentos',
+      value: weeklyCanceled.length,
+      description: 'Cancelados nos últimos 7 dias',
       border: 'border-zinc-500/40',
+      text: 'text-zinc-300',
+    },
+    {
+      title: 'Agendamentos futuros',
+      value: futureAppointments.length,
+      description: 'Ainda ativos na agenda',
+      border: 'border-yellow-500/40',
+      text: 'text-yellow-300',
     },
   ];
 
@@ -130,7 +140,7 @@ const AdminDashboard = () => {
           <div className="mb-6">
             <h1 className="text-2xl font-bold">Dashboard Administrativo</h1>
             <p className="text-zinc-400 mt-1">
-              Visão geral dos agendamentos e operação da barbearia.
+              Visão gerencial da barbearia com indicadores de desempenho.
             </p>
           </div>
 
@@ -142,13 +152,15 @@ const AdminDashboard = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-              {dashboardCards.map((item) => (
+              {strategicCards.map((item) => (
                 <Card key={item.title} className={`border ${item.border}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-zinc-400 text-sm">{item.title}</p>
-                    <span className="text-xl">{item.icon}</span>
-                  </div>
-                  <p className="text-3xl font-bold">{item.value}</p>
+                  <p className="text-zinc-400 text-sm">{item.title}</p>
+                  <p className={`text-3xl font-bold mt-3 ${item.text}`}>
+                    {item.value}
+                  </p>
+                  <p className="text-zinc-500 text-xs mt-2">
+                    {item.description}
+                  </p>
                 </Card>
               ))}
             </div>
@@ -160,17 +172,17 @@ const AdminDashboard = () => {
 
               <div className="grid grid-cols-1 gap-3">
                 <Link
-                  to="/appointments/new"
+                  to="/appointments/manage"
                   className="bg-[#003366] hover:bg-blue-900 transition rounded-lg p-3 text-center font-medium"
                 >
-                  Novo Agendamento
+                  Gerenciar Agendamentos
                 </Link>
 
                 <Link
-                  to="/appointments/manage"
+                  to="/appointments/new"
                   className="bg-zinc-800 hover:bg-zinc-700 transition rounded-lg p-3 text-center font-medium"
                 >
-                  Gerenciar Agendamentos
+                  Novo Agendamento
                 </Link>
 
                 <Link
@@ -190,36 +202,40 @@ const AdminDashboard = () => {
             </Card>
 
             <Card className="lg:col-span-2">
-              <h2 className="text-lg font-semibold mb-4">Alertas prioritários</h2>
+              <h2 className="text-lg font-semibold mb-4">Alertas gerenciais</h2>
 
               {pendingConfirmation.length === 0 &&
-              noShowToday.length === 0 &&
-              canceledToday.length === 0 ? (
+              weeklyNoShow.length === 0 &&
+              weeklyCanceled.length === 0 ? (
                 <p className="text-zinc-400">
-                  Nenhum alerta crítico no momento. A operação está tranquila.
+                  Nenhum alerta relevante no momento. Os indicadores estão
+                  estáveis.
                 </p>
               ) : (
                 <div className="space-y-3">
                   {pendingConfirmation.length > 0 && (
                     <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
                       <p className="text-yellow-300 font-medium">
-                        {pendingConfirmation.length} agendamento(s) pendente(s) de confirmação.
+                        {pendingConfirmation.length} agendamento(s) ainda
+                        pendente(s) de confirmação.
                       </p>
                     </div>
                   )}
 
-                  {noShowToday.length > 0 && (
+                  {weeklyNoShow.length > 0 && (
                     <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
                       <p className="text-red-300 font-medium">
-                        {noShowToday.length} falta(s) registrada(s) hoje.
+                        {weeklyNoShow.length} falta(s) registrada(s) nos últimos
+                        7 dias.
                       </p>
                     </div>
                   )}
 
-                  {canceledToday.length > 0 && (
+                  {weeklyCanceled.length > 0 && (
                     <div className="bg-zinc-500/10 border border-zinc-500/30 rounded-lg p-3">
                       <p className="text-zinc-300 font-medium">
-                        {canceledToday.length} agendamento(s) cancelado(s) hoje.
+                        {weeklyCanceled.length} cancelamento(s) nos últimos 7
+                        dias.
                       </p>
                     </div>
                   )}
@@ -284,7 +300,7 @@ const AdminDashboard = () => {
                       <div
                         className="bg-green-500 h-3 rounded-full"
                         style={{
-                          width: `${Math.max(day.total * 15, day.total ? 12 : 0)}%`,
+                          width: `${(day.total / maxChartValue) * 100}%`,
                         }}
                       />
                     </div>
@@ -294,54 +310,55 @@ const AdminDashboard = () => {
             </Card>
           </div>
 
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Próximos horários de hoje</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card>
+              <h2 className="text-lg font-semibold mb-4">
+                Serviço mais agendado
+              </h2>
 
-            {isLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-16" />
-                <Skeleton className="h-16" />
-              </div>
-            ) : upcomingToday.length > 0 ? (
-              <Card>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="border-b border-zinc-800 text-zinc-400">
-                        <th className="py-3 px-2">Horário</th>
-                        <th className="py-3 px-2">Cliente</th>
-                        <th className="py-3 px-2">Serviço</th>
-                        <th className="py-3 px-2">Funcionário</th>
-                        <th className="py-3 px-2">Status</th>
-                      </tr>
-                    </thead>
+              <p className="text-2xl font-bold">
+                {mostBookedService.name}
+              </p>
 
-                    <tbody>
-                      {upcomingToday.map((appt) => (
-                        <tr key={appt.id} className="border-b border-zinc-900">
-                          <td className="py-3 px-2">{formatDateTime(appt.data_hora)}</td>
-                          <td className="py-3 px-2">
-                            {appt.cliente || appt.usuario || 'Não informado'}
-                          </td>
-                          <td className="py-3 px-2">{appt.servico}</td>
-                          <td className="py-3 px-2">{appt.funcionario}</td>
-                          <td className="py-3 px-2">{appt.status}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            ) : (
-              <Card>
-                <p className="text-zinc-300 font-medium">
-                  Nenhum próximo horário para hoje.
-                </p>
-                <p className="text-zinc-500 text-sm mt-1">
-                  Quando houver agendamentos futuros no dia, eles aparecerão aqui.
-                </p>
-              </Card>
-            )}
+              <p className="text-zinc-400 text-sm mt-2">
+                {mostBookedService.total} agendamento(s) registrados.
+              </p>
+            </Card>
+
+            <Card>
+              <h2 className="text-lg font-semibold mb-4">
+                Funcionário mais requisitado
+              </h2>
+
+              <p className="text-2xl font-bold">
+                {mostRequestedEmployee.name}
+              </p>
+
+              <p className="text-zinc-400 text-sm mt-2">
+                {mostRequestedEmployee.total} agendamento(s) vinculados.
+              </p>
+            </Card>
+
+            <Card>
+              <h2 className="text-lg font-semibold mb-4">
+                Pendências administrativas
+              </h2>
+
+              <p className="text-2xl font-bold text-yellow-300">
+                {pendingConfirmation.length}
+              </p>
+
+              <p className="text-zinc-400 text-sm mt-2">
+                Agendamento(s) aguardando confirmação.
+              </p>
+
+              <Link
+                to="/appointments/manage"
+                className="inline-block mt-4 text-sm text-blue-300 hover:text-blue-200"
+              >
+                Ver gerenciamento
+              </Link>
+            </Card>
           </div>
         </div>
 
