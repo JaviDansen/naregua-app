@@ -9,6 +9,7 @@ import Dashboard from './features/dashboard/pages/Dashboard';
 import Services from './features/services/pages/Services';
 import Employees from './features/employees/pages/Employees';
 import NewAppointment from './features/appointments/pages/NewAppointment';
+import ManageAppointments from './features/appointments/pages/ManageAppointments';
 import EditAppointment from './features/appointments/pages/EditAppointment';
 import Profile from './features/profile/pages/Profile';
 
@@ -23,6 +24,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
             <Route
               path="/dashboard"
               element={
@@ -31,6 +33,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/services"
               element={
@@ -39,6 +42,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/employees"
               element={
@@ -47,6 +51,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/appointments/new"
               element={
@@ -55,6 +60,16 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/appointments/manage"
+              element={
+                <ProtectedRoute>
+                  <ManageAppointments />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/appointments/:id/edit"
               element={
@@ -63,6 +78,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/profile"
               element={
@@ -71,6 +87,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route path="*" element={<Navigate to="/dashboard" />} />
           </Routes>
         </Router>
