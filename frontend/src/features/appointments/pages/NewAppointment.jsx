@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useServices, useEmployees, useCreateAppointment } from "../../../hooks/useApi";
-import Sidebar from "../../../components/layout/Sidebar";
-import Navbar from "../../../components/layout/Navbar";
-import MobileNav from "../../../components/layout/MobileNav";
-import Card from "../../../components/ui/Card";
-import Button from "../../../components/ui/Button";
-import Select from "../../../components/ui/Select";
-import Modal from "../../../components/ui/Modal";
+import { useServices, useEmployees, useCreateAppointment } from '../../../hooks/useApi';
+import Sidebar from '../../../components/layout/Sidebar';
+import Navbar from '../../../components/layout/Navbar';
+import MobileNav from '../../../components/layout/MobileNav';
+import Card from '../../../components/ui/Card';
+import Button from '../../../components/ui/Button';
+import Select from '../../../components/ui/Select';
+import Modal from '../../../components/ui/Modal';
 import TimeSlotPicker from '../components/TimeSlotPicker';
+import {
+  formatInputDate,
+  getDateInputValueFromIso,
+  getMinDateInputValue,
+  getTimeInputValueFromIso,
+  isPastDateTime,
+} from '../../../utils/formatDate';
 
 const NewAppointment = () => {
   const navigate = useNavigate();
@@ -23,16 +30,27 @@ const NewAppointment = () => {
   const [selectedTime, setSelectedTime] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-  const serviceOptions = services?.data?.map(s => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
-  const employeeOptions = employees?.data?.map(e => ({ value: e.id, label: e.nome })) || [];
+  const serviceOptions =
+    services?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
 
-  const selectedServiceDuration = serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
+  const employeeOptions =
+    employees?.map((e) => ({ value: e.id, label: e.nome })) || [];
+
+  const selectedServiceDuration =
+    serviceOptions.find((service) => service.value === selectedService)?.duracao || 30;
 
   useEffect(() => {
     setSelectedTime('');
   }, [selectedDate, selectedEmployee, selectedService]);
 
   const handleNext = () => {
+    if (step === 3 && selectedDate < getMinDateInputValue()) {
+      alert('Não é possível selecionar uma data passada.');
+      setSelectedDate('');
+      setSelectedTime('');
+      return;
+    }
+
     if (step < 4) setStep(step + 1);
   };
 
@@ -41,13 +59,32 @@ const NewAppointment = () => {
   };
 
   const handleConfirm = async () => {
-    const data_hora = `${selectedDate}T${selectedTime}:00`;
-    await createAppointmentMutation.mutateAsync({
-      servico_id: selectedService,
-      funcionario_id: selectedEmployee,
-      data_hora,
-    });
-    navigate('/dashboard');
+    try {
+      if (isPastDateTime(selectedDate, selectedTime)) {
+        alert('Selecione uma data e horário futuros para o agendamento.');
+        return;
+      }
+
+      const data_hora = `${selectedDate}T${selectedTime}:00`;
+
+      await createAppointmentMutation.mutateAsync({
+        servico_id: Number(selectedService),
+        funcionario_id: Number(selectedEmployee),
+        data_hora,
+      });
+
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Erro ao criar agendamento:', error);
+
+      const message =
+        error.response?.data?.mensagem ||
+        error.response?.data?.erro ||
+        error.response?.data?.message ||
+        'Erro ao criar agendamento.';
+
+      alert(message);
+    }
   };
 
   const canProceed = () => {
@@ -68,10 +105,14 @@ const NewAppointment = () => {
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
       <Sidebar />
+
       <div className="flex-1">
         <Navbar />
+
         <div className="p-6 pb-20 md:pb-6 max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6 text-center">Novo Agendamento</h1>
+          <h1 className="text-2xl font-bold mb-6 text-center">
+            Novo Agendamento
+          </h1>
 
           <Card>
             {step === 1 && (
@@ -89,7 +130,9 @@ const NewAppointment = () => {
 
             {step === 2 && (
               <div>
-                <h2 className="text-xl mb-4">Passo 2: Selecione o Funcionário</h2>
+                <h2 className="text-xl mb-4">
+                  Passo 2: Selecione o Funcionário
+                </h2>
                 <Select
                   label="Funcionário"
                   value={selectedEmployee}
@@ -104,13 +147,18 @@ const NewAppointment = () => {
               <div>
                 <h2 className="text-xl mb-4">Passo 3: Selecione a Data</h2>
                 <div className="mb-4">
-                  <label className="block text-sm mb-1 text-zinc-400">Data</label>
+                  <label className="block text-sm mb-1 text-zinc-400">
+                    Data
+                  </label>
                   <input
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      setSelectedTime("");
+                    }}
                     className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 focus:outline-none focus:border-blue-500 text-white"
-                    min={new Date().toISOString().split('T')[0]}
+                    min={getMinDateInputValue()}
                     required
                   />
                 </div>
@@ -120,13 +168,21 @@ const NewAppointment = () => {
             {step === 4 && (
               <div>
                 <h2 className="text-xl mb-4">Passo 4: Selecione o Horário</h2>
-                <TimeSlotPicker
-                  selectedTime={selectedTime}
-                  onSelectTime={setSelectedTime}
-                  date={selectedDate}
-                  employeeId={selectedEmployee}
-                  serviceDuration={selectedServiceDuration}
-                />
+
+                {selectedDate < getMinDateInputValue() ? (
+                  <p className="text-red-400">
+                    Não é possível selecionar uma data passada.
+                  </p>
+                ) : (
+                  <TimeSlotPicker
+                    selectedTime={selectedTime}
+                    onSelectTime={setSelectedTime}
+                    date={selectedDate}
+                    employeeId={selectedEmployee}
+                    serviceId={selectedService}
+                    serviceDuration={selectedServiceDuration}
+                  />
+                )}
               </div>
             )}
 
@@ -136,32 +192,62 @@ const NewAppointment = () => {
                   Voltar
                 </Button>
               )}
+
               {step < 4 ? (
                 <Button onClick={handleNext} disabled={!canProceed()}>
                   Próximo
                 </Button>
               ) : (
-                <Button onClick={() => setIsConfirmModalOpen(true)} disabled={!canProceed()}>
+                <Button
+                  onClick={() => setIsConfirmModalOpen(true)}
+                  disabled={!canProceed()}
+                >
                   Confirmar
                 </Button>
               )}
             </div>
           </Card>
         </div>
+
         <MobileNav />
       </div>
 
-      <Modal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)}>
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+      >
         <h2 className="text-xl font-bold mb-4">Confirmar Agendamento</h2>
-        <p>Serviço: {serviceOptions.find(s => s.value === selectedService)?.label}</p>
-        <p>Funcionário: {employeeOptions.find(e => e.value === selectedEmployee)?.label}</p>
-        <p>Data: {selectedDate}</p>
+        <p>
+          Serviço:{" "}
+          {
+            serviceOptions.find(
+              (s) => Number(s.value) === Number(selectedService),
+            )?.label
+          }
+        </p>
+        <p>
+          Funcionário:{" "}
+          {
+            employeeOptions.find(
+              (e) => Number(e.value) === Number(selectedEmployee),
+            )?.label
+          }
+        </p>
+        <p>Data: {formatInputDate(selectedDate)}</p>
         <p>Hora: {selectedTime}</p>
+
         <div className="flex justify-between mt-6">
-          <Button variant="secondary" onClick={() => setIsConfirmModalOpen(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => setIsConfirmModalOpen(false)}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleConfirm} loading={createAppointmentMutation.isPending}>
+
+          <Button
+            onClick={handleConfirm}
+            loading={createAppointmentMutation.isPending}
+          >
             Confirmar
           </Button>
         </div>

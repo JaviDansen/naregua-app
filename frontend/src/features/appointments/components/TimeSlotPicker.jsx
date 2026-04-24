@@ -1,39 +1,131 @@
 import { useMemo } from 'react';
 import { useAvailability } from '../../../hooks/useApi';
 
-const buildDailySlots = (duration = 30) => {
-  const slots = [];
-  const startHour = 9;
-  const endHour = 18;
+const timeToMinutes = (time) => {
+  if (!time) return null;
 
-  for (let hour = startHour; hour < endHour; hour++) {
-    for (let minute = 0; minute < 60; minute += duration) {
-      const padMinute = String(minute).padStart(2, '0');
-      slots.push(`${String(hour).padStart(2, '0')}:${padMinute}`);
+  const [hours, minutes] = time.split(':').map(Number);
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+};
+
+const minutesToTime = (totalMinutes) => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+};
+
+const hasConflict = (slotStart, serviceDuration, occupiedAppointments = []) => {
+  const slotStartMinutes = timeToMinutes(slotStart);
+  const slotEndMinutes = slotStartMinutes + Number(serviceDuration || 0);
+
+  return occupiedAppointments.some((appointment) => {
+    const occupiedStart = timeToMinutes(appointment.inicio);
+    const occupiedEnd = timeToMinutes(appointment.fim);
+
+    if (occupiedStart == null || occupiedEnd == null) {
+      return false;
     }
+
+    return slotStartMinutes < occupiedEnd && slotEndMinutes > occupiedStart;
+  });
+};
+
+const buildDailySlots = ({ openTime, closeTime, serviceDuration, intervalMinutes }) => {
+  const slots = [];
+
+  const startMinutes = timeToMinutes(openTime);
+  const endMinutes = timeToMinutes(closeTime);
+  const duration = Number(serviceDuration || 30);
+  const interval = Number(intervalMinutes || 20);
+
+  if (startMinutes == null || endMinutes == null) {
+    return slots;
+  }
+
+  for (
+    let current = startMinutes;
+    current + duration <= endMinutes;
+    current += interval
+  ) {
+    slots.push(minutesToTime(current));
   }
 
   return slots;
 };
 
-const TimeSlotPicker = ({ selectedTime, onSelectTime, date, employeeId, serviceDuration = 30 }) => {
-  const { data, isLoading } = useAvailability({ funcionarioId: employeeId, date });
+const TimeSlotPicker = ({
+  selectedTime,
+  onSelectTime,
+  date,
+  employeeId,
+  serviceDuration = 30,
+  serviceId,
+}) => {
+  const { data, isLoading, isError } = useAvailability({
+    funcionarioId: employeeId,
+    date,
+    servicoId: serviceId,
+  });
+  const businessHours = data?.horario_funcionamento;
+  const occupiedAppointments = data?.agendamentos_ocupados || [];
+  const intervalMinutes = data?.intervalo_base_minutos || 20;
 
   const availableSlots = useMemo(() => {
-    if (!date || !employeeId) return [];
+    if (!date || !employeeId || !businessHours) return [];
 
-    const allSlots = buildDailySlots(serviceDuration);
-    const occupied = data?.horarios_ocupados || [];
+    if (businessHours.fechado) return [];
 
-    return allSlots.filter((slot) => !occupied.includes(slot));
-  }, [data, date, employeeId, serviceDuration]);
+    const allSlots = buildDailySlots({
+      openTime: businessHours.inicio,
+      closeTime: businessHours.fim,
+      serviceDuration,
+      intervalMinutes,
+    });
+
+    return allSlots.filter(
+      (slot) => !hasConflict(slot, serviceDuration, occupiedAppointments)
+    );
+  }, [
+    date,
+    employeeId,
+    businessHours,
+    serviceDuration,
+    intervalMinutes,
+    occupiedAppointments,
+  ]);
 
   if (!date || !employeeId) {
-    return <p className="text-zinc-400">Selecione serviço, funcionário e data para ver horários disponíveis.</p>;
+    return (
+      <p className="text-zinc-400">
+        Selecione serviço, funcionário e data para ver horários disponíveis.
+      </p>
+    );
   }
 
   if (isLoading) {
     return <p className="text-zinc-400">Carregando horários disponíveis...</p>;
+  }
+
+  if (isError) {
+    return (
+      <p className="text-red-400">
+        Erro ao carregar horários disponíveis.
+      </p>
+    );
+  }
+
+  if (businessHours?.fechado) {
+    return (
+      <p className="text-zinc-400">
+        A barbearia está fechada nesta data.
+      </p>
+    );
   }
 
   if (availableSlots.length === 0) {
@@ -45,6 +137,7 @@ const TimeSlotPicker = ({ selectedTime, onSelectTime, date, employeeId, serviceD
       {availableSlots.map((slot) => (
         <button
           key={slot}
+          type="button"
           onClick={() => onSelectTime(slot)}
           className={`p-3 rounded-lg border ${
             selectedTime === slot
