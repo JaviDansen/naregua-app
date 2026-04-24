@@ -204,21 +204,21 @@ router.post("/appointments", auth, async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO agendamentos (usuario_id, servico_id, funcionario_id, data_hora)
-       VALUES ($1, $2, $3, $4)
-       RETURNING
-         id,
-         usuario_id,
-         servico_id,
-         funcionario_id,
-         TO_CHAR(
-           data_hora AT TIME ZONE 'America/Sao_Paulo',
-           'YYYY-MM-DD"T"HH24:MI:SS'
-         ) || '-03:00' AS data_hora,
-         status,
-         TO_CHAR(
+      VALUES ($1, $2, $3, $4)
+      RETURNING
+        id,
+        usuario_id,
+        servico_id,
+        funcionario_id,
+        TO_CHAR(
+          data_hora,
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '-03:00' AS data_hora,
+        status,
+        TO_CHAR(
            criado_em AT TIME ZONE 'America/Sao_Paulo',
            'YYYY-MM-DD"T"HH24:MI:SS'
-         ) || '-03:00' AS criado_em`,
+        ) || '-03:00' AS criado_em`,
       [usuario_id, servico_id, funcionario_id, dataHoraLocal],
     );
 
@@ -255,7 +255,7 @@ router.get(
         s.duracao AS duracao_servico,
         f.nome AS funcionario,
         TO_CHAR(
-          a.data_hora AT TIME ZONE 'America/Sao_Paulo',
+          a.data_hora,
           'YYYY-MM-DD"T"HH24:MI:SS'
         ) || '-03:00' AS data_hora,
         a.status,
@@ -335,19 +335,19 @@ router.put("/appointments/:id/cancel", auth, async (req, res) => {
 
     const result = await pool.query(
       `UPDATE agendamentos
-       SET status = 'cancelado'
-       WHERE id = $1
-       RETURNING
-         id,
-         status,
-         TO_CHAR(
-           data_hora AT TIME ZONE 'America/Sao_Paulo',
-           'YYYY-MM-DD"T"HH24:MI:SS'
-         ) || '-03:00' AS data_hora,
-         TO_CHAR(
-           criado_em AT TIME ZONE 'America/Sao_Paulo',
-           'YYYY-MM-DD"T"HH24:MI:SS'
-         ) || '-03:00' AS criado_em`,
+      SET status = 'cancelado'
+      WHERE id = $1
+      RETURNING
+        id,
+        status,
+        TO_CHAR(
+          data_hora,
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '-03:00' AS data_hora,
+        TO_CHAR(
+          criado_em AT TIME ZONE 'America/Sao_Paulo',
+          'YYYY-MM-DD"T"HH24:MI:SS'
+        ) || '-03:00' AS criado_em`,
       [id],
     );
 
@@ -382,13 +382,15 @@ router.put("/appointments/:id", auth, async (req, res) => {
       });
     }
 
-    if (isNaN(Date.parse(data_hora))) {
+    const dataHoraLocal = parseLocalDateTime(data_hora);
+
+    if (!dataHoraLocal) {
       return res.status(400).json({
         erro: "data_hora inválida",
       });
     }
 
-    if (new Date(data_hora) < new Date()) {
+    if (dataHoraLocal < new Date()) {
       return res.status(400).json({
         erro: "Não é possível editar agendamento para data/hora passada",
       });
@@ -475,8 +477,9 @@ router.put("/appointments/:id", auth, async (req, res) => {
       });
     }
 
-    const inicioNovoAgendamento = new Date(data_hora);
+    const inicioNovoAgendamento = new Date(dataHoraLocal);
     const fimNovoAgendamento = new Date(inicioNovoAgendamento);
+
     fimNovoAgendamento.setMinutes(
       fimNovoAgendamento.getMinutes() + duracaoNovoServico,
     );
@@ -501,7 +504,7 @@ router.put("/appointments/:id", auth, async (req, res) => {
          AND a.id != $4
          AND $2::timestamp < (a.data_hora + (s.duracao || ' minutes')::interval)
          AND $3::timestamp > a.data_hora`,
-      [funcionario_id, data_hora, fimNovoAgendamento.toISOString(), id],
+      [funcionario_id, inicioNovoAgendamento, fimNovoAgendamento, id],
     );
 
     if (conflitoHorario.rows.length > 0) {
@@ -523,7 +526,7 @@ router.put("/appointments/:id", auth, async (req, res) => {
          servico_id,
          funcionario_id,
          TO_CHAR(
-           data_hora AT TIME ZONE 'America/Sao_Paulo',
+           data_hora,
            'YYYY-MM-DD"T"HH24:MI:SS'
          ) || '-03:00' AS data_hora,
          status,
@@ -531,7 +534,7 @@ router.put("/appointments/:id", auth, async (req, res) => {
            criado_em AT TIME ZONE 'America/Sao_Paulo',
            'YYYY-MM-DD"T"HH24:MI:SS'
          ) || '-03:00' AS criado_em`,
-      [agendamento.usuario_id, servico_id, funcionario_id, data_hora, id],
+      [agendamento.usuario_id, servico_id, funcionario_id, dataHoraLocal, id],
     );
 
     return res.status(200).json({
@@ -560,7 +563,7 @@ router.get("/my-appointments", auth, async (req, res) => {
         s.duracao AS duracao_servico,
         f.nome AS funcionario,
         TO_CHAR(
-          a.data_hora AT TIME ZONE 'America/Sao_Paulo',
+          data_hora,
           'YYYY-MM-DD"T"HH24:MI:SS'
         ) || '-03:00' AS data_hora,
         a.status
@@ -685,21 +688,21 @@ router.get("/availability", auth, async (req, res) => {
 
     const result = await pool.query(
       `SELECT
-         TO_CHAR(
-           a.data_hora AT TIME ZONE 'America/Sao_Paulo',
-           'HH24:MI'
-         ) AS inicio,
-         TO_CHAR(
-           (a.data_hora + (s.duracao || ' minutes')::interval) AT TIME ZONE 'America/Sao_Paulo',
-           'HH24:MI'
-         ) AS fim,
-         s.duracao
-       FROM agendamentos a
-       INNER JOIN servicos s ON a.servico_id = s.id
-       WHERE a.funcionario_id = $1
-         AND DATE(a.data_hora AT TIME ZONE 'America/Sao_Paulo') = $2
-         AND a.status != 'cancelado'
-       ORDER BY a.data_hora ASC`,
+        TO_CHAR(
+          a.data_hora,
+          'HH24:MI'
+        ) AS inicio,
+        TO_CHAR(
+          a.data_hora + (s.duracao || ' minutes')::interval,
+          'HH24:MI'
+        ) AS fim,
+        s.duracao
+      FROM agendamentos a
+      INNER JOIN servicos s ON a.servico_id = s.id
+      WHERE a.funcionario_id = $1
+        AND DATE(a.data_hora) = $2
+        AND a.status != 'cancelado'
+      ORDER BY a.data_hora ASC`,
       [funcionario_id, data],
     );
 
@@ -836,15 +839,15 @@ router.put(
 
       const result = await pool.query(
         `UPDATE agendamentos
-         SET status = 'concluido'
-         WHERE id = $1
-         RETURNING
-           id,
-           status,
-           TO_CHAR(
-             data_hora AT TIME ZONE 'America/Sao_Paulo',
-             'YYYY-MM-DD"T"HH24:MI:SS'
-           ) || '-03:00' AS data_hora`,
+        SET status = 'concluido'
+        WHERE id = $1
+        RETURNING
+          id,
+          status,
+          TO_CHAR(
+            data_hora,
+            'YYYY-MM-DD"T"HH24:MI:SS'
+          ) || '-03:00' AS data_hora`,
         [id],
       );
 
@@ -917,12 +920,12 @@ router.put(
          SET status = 'faltou'
          WHERE id = $1
          RETURNING
-           id,
-           status,
-           TO_CHAR(
-             data_hora AT TIME ZONE 'America/Sao_Paulo',
-             'YYYY-MM-DD"T"HH24:MI:SS'
-           ) || '-03:00' AS data_hora`,
+          id,
+          status,
+          TO_CHAR(
+            data_hora,
+            'YYYY-MM-DD"T"HH24:MI:SS'
+          ) || '-03:00' AS data_hora`,
         [id],
       );
 
