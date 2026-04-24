@@ -19,12 +19,23 @@ const ManageAppointments = () => {
   const noShowMutation = useNoShowAppointment();
   const cancelMutation = useCancelAppointment();
 
+  const today = new Date().toISOString().split('T')[0];
   const activeStatuses = ['agendado', 'pendente de confirmação'];
 
   const isActiveAppointment = (status) => activeStatuses.includes(status);
+  const isToday = (dateTime) => dateTime?.startsWith(today);
 
-  const activeAppointments = appointments
-    .filter((appt) => isActiveAppointment(appt.status))
+  const todayAppointments = appointments
+    .filter((appt) => isActiveAppointment(appt.status) && isToday(appt.data_hora))
+    .sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
+
+  const upcomingAppointments = appointments
+    .filter(
+      (appt) =>
+        isActiveAppointment(appt.status) &&
+        !isToday(appt.data_hora) &&
+        new Date(appt.data_hora) > new Date()
+    )
     .sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
 
   const historyAppointments = appointments
@@ -70,7 +81,49 @@ const ManageAppointments = () => {
     </span>
   );
 
-  const renderAppointmentTable = (items, showActions = false) => (
+  const renderActions = (appt, type) => {
+    if (type === 'today') {
+      return (
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            className="text-xs px-3 py-1 bg-green-600 hover:bg-green-700"
+            onClick={() => handleComplete(appt.id)}
+          >
+            Concluir
+          </Button>
+
+          <Button
+            className="text-xs px-3 py-1 bg-yellow-600 hover:bg-yellow-700"
+            onClick={() => handleNoShow(appt.id)}
+          >
+            Faltou
+          </Button>
+
+          <Button
+            className="text-xs px-3 py-1 bg-red-600 hover:bg-red-700"
+            onClick={() => handleCancel(appt.id)}
+          >
+            Cancelar
+          </Button>
+        </div>
+      );
+    }
+
+    if (type === 'upcoming') {
+      return (
+        <Button
+          className="text-xs px-3 py-1 bg-red-600 hover:bg-red-700"
+          onClick={() => handleCancel(appt.id)}
+        >
+          Cancelar
+        </Button>
+      );
+    }
+
+    return null;
+  };
+
+  const renderAppointmentTable = (items, actionType = null) => (
     <Card>
       <div className="overflow-x-auto">
         <table className="w-full text-left">
@@ -81,7 +134,7 @@ const ManageAppointments = () => {
               <th className="py-3 px-2">Funcionário</th>
               <th className="py-3 px-2">Data/Hora</th>
               <th className="py-3 px-2">Status</th>
-              {showActions && <th className="py-3 px-2">Ações</th>}
+              {actionType && <th className="py-3 px-2">Ações</th>}
             </tr>
           </thead>
 
@@ -91,53 +144,14 @@ const ManageAppointments = () => {
                 <td className="py-3 px-2">
                   {appt.cliente || appt.usuario || 'Não informado'}
                 </td>
-
                 <td className="py-3 px-2">{appt.servico}</td>
-
                 <td className="py-3 px-2">{appt.funcionario}</td>
-
-                <td className="py-3 px-2">
-                  {formatDateTime(appt.data_hora)}
-                </td>
-
+                <td className="py-3 px-2">{formatDateTime(appt.data_hora)}</td>
                 <td className="py-3 px-2">{renderStatusBadge(appt.status)}</td>
 
-                {showActions && (
+                {actionType && (
                   <td className="py-3 px-2">
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        className="text-xs px-3 py-1 bg-green-600 hover:bg-green-700"
-                        loading={
-                          completeMutation.isPending &&
-                          completeMutation.variables === appt.id
-                        }
-                        onClick={() => handleComplete(appt.id)}
-                      >
-                        Concluir
-                      </Button>
-
-                      <Button
-                        className="text-xs px-3 py-1 bg-yellow-600 hover:bg-yellow-700"
-                        loading={
-                          noShowMutation.isPending &&
-                          noShowMutation.variables === appt.id
-                        }
-                        onClick={() => handleNoShow(appt.id)}
-                      >
-                        Faltou
-                      </Button>
-
-                      <Button
-                        className="text-xs px-3 py-1 bg-red-600 hover:bg-red-700"
-                        loading={
-                          cancelMutation.isPending &&
-                          cancelMutation.variables === appt.id
-                        }
-                        onClick={() => handleCancel(appt.id)}
-                      >
-                        Cancelar
-                      </Button>
-                    </div>
+                    {renderActions(appt, actionType)}
                   </td>
                 )}
               </tr>
@@ -177,29 +191,58 @@ const ManageAppointments = () => {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-xl font-semibold">
-                      Agendamentos ativos
+                      Agendamentos de hoje
                     </h2>
                     <p className="text-zinc-500 text-sm">
-                      Agendamentos que ainda exigem acompanhamento do
-                      administrador.
+                      Atendimentos que exigem ação operacional no dia.
                     </p>
                   </div>
 
                   <span className="rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 px-3 py-1 text-sm">
-                    {activeAppointments.length} ativo(s)
+                    {todayAppointments.length} hoje
                   </span>
                 </div>
 
-                {activeAppointments.length > 0 ? (
-                  renderAppointmentTable(activeAppointments, true)
+                {todayAppointments.length > 0 ? (
+                  renderAppointmentTable(todayAppointments, 'today')
                 ) : (
                   <Card>
                     <p className="text-zinc-300 font-medium">
-                      Nenhum agendamento ativo no momento.
+                      Nenhum agendamento ativo para hoje.
                     </p>
                     <p className="text-zinc-500 text-sm mt-1">
-                      Quando houver agendamentos pendentes ou agendados, eles
-                      aparecerão aqui.
+                      Quando houver atendimentos no dia, eles aparecerão aqui.
+                    </p>
+                  </Card>
+                )}
+              </section>
+
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-semibold">
+                      Próximos agendamentos
+                    </h2>
+                    <p className="text-zinc-500 text-sm">
+                      Agendamentos futuros. Por enquanto, apenas o cancelamento
+                      fica disponível.
+                    </p>
+                  </div>
+
+                  <span className="rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 px-3 py-1 text-sm">
+                    {upcomingAppointments.length} próximo(s)
+                  </span>
+                </div>
+
+                {upcomingAppointments.length > 0 ? (
+                  renderAppointmentTable(upcomingAppointments, 'upcoming')
+                ) : (
+                  <Card>
+                    <p className="text-zinc-300 font-medium">
+                      Nenhum próximo agendamento ativo.
+                    </p>
+                    <p className="text-zinc-500 text-sm mt-1">
+                      Novos horários futuros aparecerão nesta seção.
                     </p>
                   </Card>
                 )}
@@ -220,7 +263,7 @@ const ManageAppointments = () => {
                 </div>
 
                 {historyAppointments.length > 0 ? (
-                  renderAppointmentTable(historyAppointments, false)
+                  renderAppointmentTable(historyAppointments)
                 ) : (
                   <Card>
                     <p className="text-zinc-300 font-medium">
