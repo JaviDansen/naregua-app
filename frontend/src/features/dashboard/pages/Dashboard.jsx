@@ -12,8 +12,17 @@ import {
   getNextAppointment,
   sortAppointmentsWithCanceledLast,
 } from '../../../utils/formatDate';
+import { useAuth } from '../../auth/hooks/useAuth';
+import AdminDashboard from './AdminDashboard';
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.perfil === 'admin';
+
+  if (isAdmin) {
+    return <AdminDashboard />;
+  }
+
   const navigate = useNavigate();
   const { data: appointments = [], isLoading } = useMyAppointments();
   const cancelAppointmentMutation = useCancelAppointment();
