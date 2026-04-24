@@ -98,7 +98,7 @@ const EditAppointment = () => {
         return;
       }
 
-      const data_hora = `${selectedDate}T${selectedTime}:00-03:00`;
+      const data_hora = `${selectedDate}T${selectedTime}:00`;
 
       await updateAppointmentMutation.mutateAsync({
         id,
