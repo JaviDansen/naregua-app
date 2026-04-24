@@ -12,6 +12,8 @@ router.get('/employees', async (req, res) => {
         id,
         nome,
         especialidade
+      FROM funcionarios
+      ORDER BY nome ASC
     `);
 
     return res.status(200).json({
