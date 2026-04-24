@@ -8,6 +8,7 @@ import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Modal from "../../../components/ui/Modal";
 import Skeleton from "../../../components/ui/Skeleton";
+import { useAuth } from '../../auth/hooks/useAuth';
 
 const Employees = () => {
   const { data: employees, isLoading } = useEmployees();
@@ -16,6 +17,9 @@ const Employees = () => {
   const [nome, setNome] = useState('');
   const [especialidade, setEspecialidade] = useState('');
   const [telefone, setTelefone] = useState('');
+
+  const { user } = useAuth();
+  const isAdmin = user?.perfil === 'admin';
 
   const handleCreate = async () => {
     await createEmployeeMutation.mutateAsync({ nome, especialidade, telefone });
@@ -33,7 +37,11 @@ const Employees = () => {
         <div className="p-6 pb-20 md:pb-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Funcionários</h1>
-            <Button onClick={() => setIsModalOpen(true)}>Adicionar Funcionário</Button>
+            {isAdmin && (
+              <Button onClick={() => setIsModalOpen(true)}>
+                Adicionar Funcionário
+              </Button>
+            )}
           </div>
 
           {isLoading ? (

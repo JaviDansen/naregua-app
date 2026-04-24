@@ -9,6 +9,7 @@ import Input from "../../../components/ui/Input";
 import Modal from "../../../components/ui/Modal";
 import Skeleton from "../../../components/ui/Skeleton";
 import ServiceCard from '../components/ServiceCard';
+import { useAuth } from '../../auth/hooks/useAuth';
 
 const Services = () => {
   const { data: services, isLoading } = useServices();
@@ -17,6 +18,9 @@ const Services = () => {
   const [nome, setNome] = useState('');
   const [preco, setPreco] = useState('');
   const [duracao, setDuracao] = useState('');
+
+  const { user } = useAuth();
+  const isAdmin = user?.perfil === 'admin';
 
   const handleCreate = async () => {
     await createServiceMutation.mutateAsync({ nome, preco: parseFloat(preco), duracao: parseInt(duracao) });
@@ -34,7 +38,11 @@ const Services = () => {
         <div className="p-6 pb-20 md:pb-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Serviços</h1>
-            <Button onClick={() => setIsModalOpen(true)}>Adicionar Serviço</Button>
+            {isAdmin && (
+              <Button onClick={() => setIsModalOpen(true)}>
+                Adicionar Serviço
+              </Button>
+            )}
           </div>
 
           {isLoading ? (
