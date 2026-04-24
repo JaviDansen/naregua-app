@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useAppointments } from '../../../hooks/useApi';
 import Sidebar from '../../../components/layout/Sidebar';
 import Navbar from '../../../components/layout/Navbar';
@@ -15,12 +16,17 @@ const AdminDashboard = () => {
     appt.data_hora?.startsWith(today)
   );
 
+  const upcomingToday = appointmentsToday
+    .filter((appt) => new Date(appt.data_hora) >= new Date())
+    .sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora))
+    .slice(0, 5);
+
   const pendingConfirmation = appointments.filter(
     (appt) => appt.status === 'pendente de confirmação'
   );
 
   const completedToday = appointmentsToday.filter(
-    (appt) => appt.status === 'concluído'
+    (appt) => appt.status === 'concluído' || appt.status === 'concluido'
   );
 
   const noShowToday = appointmentsToday.filter(
@@ -31,6 +37,39 @@ const AdminDashboard = () => {
     (appt) => appt.status === 'cancelado'
   );
 
+  const dashboardCards = [
+    {
+      title: 'Agendados hoje',
+      value: appointmentsToday.length,
+      icon: '📅',
+      border: 'border-blue-500/40',
+    },
+    {
+      title: 'Pendentes confirmação',
+      value: pendingConfirmation.length,
+      icon: '🟡',
+      border: 'border-yellow-500/40',
+    },
+    {
+      title: 'Concluídos hoje',
+      value: completedToday.length,
+      icon: '✅',
+      border: 'border-green-500/40',
+    },
+    {
+      title: 'Faltas hoje',
+      value: noShowToday.length,
+      icon: '⚠️',
+      border: 'border-red-500/40',
+    },
+    {
+      title: 'Cancelados hoje',
+      value: canceledToday.length,
+      icon: '🚫',
+      border: 'border-zinc-500/40',
+    },
+  ];
+
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
       <Sidebar />
@@ -39,66 +78,153 @@ const AdminDashboard = () => {
         <Navbar />
 
         <div className="p-6 pb-20 md:pb-6">
-          <h1 className="text-2xl font-bold mb-6">Dashboard Administrativo</h1>
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold">Dashboard Administrativo</h1>
+            <p className="text-zinc-400 mt-1">
+              Visão geral dos agendamentos e operação da barbearia.
+            </p>
+          </div>
 
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
               {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-24" />
+                <Skeleton key={i} className="h-28" />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-              <Card>
-                <p className="text-zinc-400 text-sm">Agendados hoje</p>
-                <p className="text-3xl font-bold">{appointmentsToday.length}</p>
-              </Card>
-
-              <Card>
-                <p className="text-zinc-400 text-sm">Pendentes confirmação</p>
-                <p className="text-3xl font-bold">{pendingConfirmation.length}</p>
-              </Card>
-
-              <Card>
-                <p className="text-zinc-400 text-sm">Concluídos hoje</p>
-                <p className="text-3xl font-bold">{completedToday.length}</p>
-              </Card>
-
-              <Card>
-                <p className="text-zinc-400 text-sm">Faltas hoje</p>
-                <p className="text-3xl font-bold">{noShowToday.length}</p>
-              </Card>
-
-              <Card>
-                <p className="text-zinc-400 text-sm">Cancelados hoje</p>
-                <p className="text-3xl font-bold">{canceledToday.length}</p>
-              </Card>
+              {dashboardCards.map((item) => (
+                <Card key={item.title} className={`border ${item.border}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-zinc-400 text-sm">{item.title}</p>
+                    <span className="text-xl">{item.icon}</span>
+                  </div>
+                  <p className="text-3xl font-bold">{item.value}</p>
+                </Card>
+              ))}
             </div>
           )}
 
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <Card>
+              <h2 className="text-lg font-semibold mb-4">Atalhos rápidos</h2>
+
+              <div className="grid grid-cols-1 gap-3">
+                <Link
+                  to="/appointments/new"
+                  className="bg-[#003366] hover:bg-blue-900 transition rounded-lg p-3 text-center font-medium"
+                >
+                  Novo Agendamento
+                </Link>
+
+                <Link
+                  to="/appointments/manage"
+                  className="bg-zinc-800 hover:bg-zinc-700 transition rounded-lg p-3 text-center font-medium"
+                >
+                  Gerenciar Agendamentos
+                </Link>
+
+                <Link
+                  to="/services"
+                  className="bg-zinc-800 hover:bg-zinc-700 transition rounded-lg p-3 text-center font-medium"
+                >
+                  Gerenciar Serviços
+                </Link>
+
+                <Link
+                  to="/employees"
+                  className="bg-zinc-800 hover:bg-zinc-700 transition rounded-lg p-3 text-center font-medium"
+                >
+                  Gerenciar Funcionários
+                </Link>
+              </div>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <h2 className="text-lg font-semibold mb-4">Alertas prioritários</h2>
+
+              {pendingConfirmation.length === 0 &&
+              noShowToday.length === 0 &&
+              canceledToday.length === 0 ? (
+                <p className="text-zinc-400">
+                  Nenhum alerta crítico no momento. A operação está tranquila.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {pendingConfirmation.length > 0 && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                      <p className="text-yellow-300 font-medium">
+                        {pendingConfirmation.length} agendamento(s) pendente(s) de confirmação.
+                      </p>
+                    </div>
+                  )}
+
+                  {noShowToday.length > 0 && (
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                      <p className="text-red-300 font-medium">
+                        {noShowToday.length} falta(s) registrada(s) hoje.
+                      </p>
+                    </div>
+                  )}
+
+                  {canceledToday.length > 0 && (
+                    <div className="bg-zinc-500/10 border border-zinc-500/30 rounded-lg p-3">
+                      <p className="text-zinc-300 font-medium">
+                        {canceledToday.length} agendamento(s) cancelado(s) hoje.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          </div>
+
           <div>
-            <h2 className="text-xl font-semibold mb-4">Agendamentos de hoje</h2>
+            <h2 className="text-xl font-semibold mb-4">Próximos horários de hoje</h2>
 
             {isLoading ? (
               <div className="space-y-4">
                 <Skeleton className="h-16" />
                 <Skeleton className="h-16" />
               </div>
-            ) : appointmentsToday.length > 0 ? (
-              <div className="space-y-4">
-                {appointmentsToday.map((appt) => (
-                  <Card key={appt.id}>
-                    <p>Cliente: {appt.cliente || appt.usuario || 'Não informado'}</p>
-                    <p>Serviço: {appt.servico}</p>
-                    <p>Funcionário: {appt.funcionario}</p>
-                    <p>Data: {formatDateTime(appt.data_hora)}</p>
-                    <p>Status: {appt.status}</p>
-                  </Card>
-                ))}
-              </div>
+            ) : upcomingToday.length > 0 ? (
+              <Card>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-zinc-800 text-zinc-400">
+                        <th className="py-3 px-2">Horário</th>
+                        <th className="py-3 px-2">Cliente</th>
+                        <th className="py-3 px-2">Serviço</th>
+                        <th className="py-3 px-2">Funcionário</th>
+                        <th className="py-3 px-2">Status</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {upcomingToday.map((appt) => (
+                        <tr key={appt.id} className="border-b border-zinc-900">
+                          <td className="py-3 px-2">{formatDateTime(appt.data_hora)}</td>
+                          <td className="py-3 px-2">
+                            {appt.cliente || appt.usuario || 'Não informado'}
+                          </td>
+                          <td className="py-3 px-2">{appt.servico}</td>
+                          <td className="py-3 px-2">{appt.funcionario}</td>
+                          <td className="py-3 px-2">{appt.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
             ) : (
               <Card>
-                <p className="text-zinc-400">Nenhum agendamento para hoje</p>
+                <p className="text-zinc-300 font-medium">
+                  Nenhum próximo horário para hoje.
+                </p>
+                <p className="text-zinc-500 text-sm mt-1">
+                  Quando houver agendamentos futuros no dia, eles aparecerão aqui.
+                </p>
               </Card>
             )}
           </div>
