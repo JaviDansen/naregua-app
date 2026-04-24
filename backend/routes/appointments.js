@@ -8,16 +8,9 @@ const authorize = require("../middlewares/role");
 function getDayOfWeekAndTimeInSaoPaulo(dataHora) {
   const [dataParte, horaParte] = dataHora.split("T");
   const [ano, mes, dia] = dataParte.split("-").map(Number);
-  const [hora, minuto] = horaParte.split(":");
-  const data = new Date(
-    ano,
-    mes - 1,
-    dia,
-    Number(hora),
-    Number(minuto)
-  );
+  const [hora, minuto] = horaParte.split(":").map(Number);
 
-  const data = new Date(ano, mes - 1, dia, hora, minuto);
+  const dataLocal = new Date(ano, mes - 1, dia, hora, minuto);
 
   const formatterDia = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Sao_Paulo",
@@ -31,8 +24,8 @@ function getDayOfWeekAndTimeInSaoPaulo(dataHora) {
     hour12: false,
   });
 
-  const diaTexto = formatterDia.format(data);
-  const horario = formatterHora.format(data);
+  const diaTexto = formatterDia.format(dataLocal);
+  const horario = formatterHora.format(dataLocal);
 
   const mapaDias = {
     Sun: 0,
