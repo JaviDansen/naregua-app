@@ -37,6 +37,55 @@ const AdminDashboard = () => {
     (appt) => appt.status === 'cancelado'
   );
 
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const weeklyAppointments = appointments.filter(
+    (appt) => new Date(appt.data_hora) >= sevenDaysAgo
+  );
+
+  const weeklyCompleted = weeklyAppointments.filter(
+    (appt) =>
+      appt.status === 'concluído' || appt.status === 'concluido'
+  );
+
+  const weeklyNoShow = weeklyAppointments.filter(
+    (appt) => appt.status === 'faltou'
+  );
+
+  const weeklyCanceled = weeklyAppointments.filter(
+    (appt) => appt.status === 'cancelado'
+  );
+
+  const attendanceBase =
+    weeklyCompleted.length +
+    weeklyNoShow.length +
+    weeklyCanceled.length;
+
+  const attendanceRate =
+    attendanceBase > 0
+      ? Math.round((weeklyCompleted.length / attendanceBase) * 100)
+      : 0;
+
+  const weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+  const weeklyChart = Array.from({ length: 7 }, (_, index) => {
+    const day = new Date();
+    day.setDate(day.getDate() - (6 - index));
+
+    const dateString = day.toISOString().split('T')[0];
+
+    const total = weeklyCompleted.filter((appt) =>
+      appt.data_hora?.startsWith(dateString)
+    ).length;
+
+    return {
+      label: weekLabels[day.getDay()],
+      total,
+    };
+  });
+
   const dashboardCards = [
     {
       title: 'Agendados hoje',
@@ -176,6 +225,72 @@ const AdminDashboard = () => {
                   )}
                 </div>
               )}
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <Card>
+              <h2 className="text-lg font-semibold mb-4">Resumo semanal</h2>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-zinc-400 text-sm">
+                    Taxa de comparecimento
+                  </p>
+                  <p className="text-4xl font-bold text-green-400">
+                    {attendanceRate}%
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-zinc-800 rounded-lg p-3">
+                    <p className="text-sm text-zinc-400">Concluídos</p>
+                    <p className="text-xl font-bold">
+                      {weeklyCompleted.length}
+                    </p>
+                  </div>
+
+                  <div className="bg-zinc-800 rounded-lg p-3">
+                    <p className="text-sm text-zinc-400">Faltas</p>
+                    <p className="text-xl font-bold text-red-400">
+                      {weeklyNoShow.length}
+                    </p>
+                  </div>
+
+                  <div className="bg-zinc-800 rounded-lg p-3">
+                    <p className="text-sm text-zinc-400">Cancelados</p>
+                    <p className="text-xl font-bold text-zinc-300">
+                      {weeklyCanceled.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card>
+              <h2 className="text-lg font-semibold mb-4">
+                Concluídos últimos 7 dias
+              </h2>
+
+              <div className="space-y-3">
+                {weeklyChart.map((day) => (
+                  <div key={day.label}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>{day.label}</span>
+                      <span>{day.total}</span>
+                    </div>
+
+                    <div className="w-full bg-zinc-800 rounded-full h-3">
+                      <div
+                        className="bg-green-500 h-3 rounded-full"
+                        style={{
+                          width: `${Math.max(day.total * 15, day.total ? 12 : 0)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </Card>
           </div>
 
