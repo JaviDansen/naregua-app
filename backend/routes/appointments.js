@@ -7,39 +7,23 @@ const authorize = require("../middlewares/role");
 
 function getDayOfWeekAndTimeInSaoPaulo(dataHora) {
   const [dataParte, horaParte] = dataHora.split("T");
+
+  if (!dataParte || !horaParte) {
+    return null;
+  }
+
   const [ano, mes, dia] = dataParte.split("-").map(Number);
   const [hora, minuto] = horaParte.split(":").map(Number);
 
-  const dataLocal = new Date(ano, mes - 1, dia, hora, minuto);
+  if ([ano, mes, dia, hora, minuto].some(Number.isNaN)) {
+    return null;
+  }
 
-  const formatterDia = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Sao_Paulo",
-    weekday: "short",
-  });
-
-  const formatterHora = new Intl.DateTimeFormat("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  const diaTexto = formatterDia.format(dataLocal);
-  const horario = formatterHora.format(dataLocal);
-
-  const mapaDias = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
+  const dataLocal = new Date(ano, mes - 1, dia);
 
   return {
-    day_of_week: mapaDias[diaTexto],
-    horario,
+    day_of_week: dataLocal.getDay(),
+    horario: `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`,
   };
 }
 
