@@ -179,6 +179,7 @@ const NewAppointment = () => {
                     onSelectTime={setSelectedTime}
                     date={selectedDate}
                     employeeId={selectedEmployee}
+                    serviceId={selectedService}
                     serviceDuration={selectedServiceDuration}
                   />
                 )}

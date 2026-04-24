@@ -229,6 +229,7 @@ const EditAppointment = () => {
                   onSelectTime={setSelectedTime}
                   date={selectedDate}
                   employeeId={selectedEmployee}
+                  serviceId={selectedService}
                   serviceDuration={selectedServiceDuration}
                 />
               </div>
