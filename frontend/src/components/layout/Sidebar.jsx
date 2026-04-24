@@ -3,12 +3,18 @@ import { useAuth } from '../../features/auth/hooks/useAuth';
 
 const Sidebar = () => {
   const location = useLocation();
-  const { logout } = useAuth();
+
+  const { logout, user } = useAuth();
+
+  const isAdmin = user?.perfil === 'admin';
 
   const menuItems = [
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/services', label: 'Serviços' },
     { path: '/employees', label: 'Funcionários' },
+    ...(isAdmin
+      ? [{ path: '/appointments/manage', label: 'Gerenciar Agendamentos' }]
+      : []),
     { path: '/appointments/new', label: 'Novo Agendamento' },
     { path: '/profile', label: 'Perfil' },
   ];

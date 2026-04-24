@@ -3,11 +3,18 @@ import { useAuth } from '../../features/auth/hooks/useAuth';
 
 const MobileNav = () => {
   const location = useLocation();
-  const { logout } = useAuth();
+
+  const { logout, user } = useAuth();
+
+  const isAdmin = user?.perfil === 'admin';
 
   const menuItems = [
     { path: '/dashboard', icon: '🏠' },
     { path: '/services', icon: '✂️' },
+    { path: '/employees', icon: '👥' },
+    ...(isAdmin
+      ? [{ path: '/appointments/manage', icon: '📋' }]
+      : []),
     { path: '/appointments/new', icon: '📅' },
     { path: '/profile', icon: '👤' },
   ];
