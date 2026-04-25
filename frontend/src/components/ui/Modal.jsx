@@ -1,15 +1,46 @@
-const Modal = ({ isOpen, onClose, children }) => {
+const Modal = ({
+  isOpen,
+  onClose,
+  children,
+  title,
+  size = 'md',
+}) => {
   if (!isOpen) return null;
 
+  const sizes = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-xl',
+    xl: 'max-w-2xl',
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg max-w-md w-full mx-4">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4">
+      <div
+        className={`
+          w-full
+          ${sizes[size]}
+          bg-zinc-900
+          border border-zinc-800
+          rounded-2xl
+          shadow-2xl
+          p-6
+          relative
+        `}
+      >
         <button
           onClick={onClose}
-          className="float-right text-zinc-400 hover:text-white"
+          className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors"
         >
           ✕
         </button>
+
+        {title && (
+          <div className="mb-4 pr-8">
+            <h2 className="text-xl font-bold">{title}</h2>
+          </div>
+        )}
+
         {children}
       </div>
     </div>
