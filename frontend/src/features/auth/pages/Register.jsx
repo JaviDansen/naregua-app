@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
-import Card from '../../../components/ui/Card';
+import AuthLayout from '../components/AuthLayout';
 
 const Register = () => {
   const [nome, setNome] = useState('');
@@ -12,19 +12,25 @@ const Register = () => {
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (senha !== confirmarSenha) {
-      setError('Senhas não coincidem');
+      setError('As senhas informadas não coincidem.');
       return;
     }
+
     setLoading(true);
     setError('');
+
     const result = await register(nome, email, senha);
+
     setLoading(false);
+
     if (result.success) {
       navigate('/login');
     } else {
@@ -33,47 +39,60 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center">
-      <Card>
-        <h1 className="text-2xl font-bold mb-6 text-center">Cadastro</h1>
-        <form onSubmit={handleSubmit}>
-          <Input
-            label="Nome"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            required
-          />
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            label="Senha"
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            required
-          />
-          <Input
-            label="Confirmar Senha"
-            type="password"
-            value={confirmarSenha}
-            onChange={(e) => setConfirmarSenha(e.target.value)}
-            required
-          />
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Cadastrando...' : 'Cadastrar'}
-          </Button>
-        </form>
-        <p className="text-sm mt-4 text-center text-zinc-400">
-          Já tem conta? <Link to="/login" className="text-blue-500">Entrar</Link>
-        </p>
-      </Card>
-    </div>
+    <AuthLayout
+      title="Criar conta"
+      subtitle="Cadastre-se para agendar seus horários de forma rápida."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
+        <Input
+          label="Nome"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          required
+        />
+
+        <Input
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+
+        <Input
+          label="Senha"
+          type="password"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          required
+        />
+
+        <Input
+          label="Confirmar senha"
+          type="password"
+          value={confirmarSenha}
+          onChange={(e) => setConfirmarSenha(e.target.value)}
+          required
+        />
+
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? 'Cadastrando...' : 'Criar conta'}
+        </Button>
+      </form>
+
+      <p className="text-sm mt-6 text-center text-zinc-400">
+        Já tem conta?{' '}
+        <Link to="/login" className="text-blue-400 hover:text-blue-300">
+          Entrar
+        </Link>
+      </p>
+    </AuthLayout>
   );
 };
 
