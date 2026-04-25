@@ -27,6 +27,7 @@ const NewAppointment = () => {
     data: employees,
     isLoading: loadingEmployees,
   } = useEmployees();
+  const { data: employees } = useEmployees();
   const createAppointmentMutation = useCreateAppointment();
 
   const [step, setStep] = useState(1);
