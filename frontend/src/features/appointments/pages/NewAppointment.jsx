@@ -19,7 +19,14 @@ import {
 
 const NewAppointment = () => {
   const navigate = useNavigate();
-  const { data: services } = useServices();
+  const {
+    data: services,
+    isLoading: loadingServices,
+  } = useServices();
+  const {
+    data: employees,
+    isLoading: loadingEmployees,
+  } = useEmployees();
   const { data: employees } = useEmployees();
   const createAppointmentMutation = useCreateAppointment();
 
@@ -122,13 +129,17 @@ const NewAppointment = () => {
             {step === 1 && (
               <div>
                 <h2 className="text-xl mb-4">Passo 1: Selecione o Serviço</h2>
-                <Select
-                  label="Serviço"
-                  value={selectedService}
-                  onChange={(e) => setSelectedService(e.target.value)}
-                  options={serviceOptions}
-                  required
-                />
+                {loadingServices ? (
+                  <p className="text-zinc-400">Carregando serviços...</p>
+                ) : (
+                  <Select
+                    label="Serviço"
+                    value={selectedService}
+                    onChange={(e) => setSelectedService(e.target.value)}
+                    options={serviceOptions}
+                    required
+                  />
+                )}
               </div>
             )}
 
@@ -137,13 +148,17 @@ const NewAppointment = () => {
                 <h2 className="text-xl mb-4">
                   Passo 2: Selecione o Funcionário
                 </h2>
-                <Select
-                  label="Funcionário"
-                  value={selectedEmployee}
-                  onChange={(e) => setSelectedEmployee(e.target.value)}
-                  options={employeeOptions}
-                  required
-                />
+                {loadingEmployees ? (
+                  <p className="text-zinc-400">Carregando funcionários...</p>
+                ) : (
+                  <Select
+                    label="Funcionário"
+                    value={selectedEmployee}
+                    onChange={(e) => setSelectedEmployee(e.target.value)}
+                    options={employeeOptions}
+                    required
+                  />
+                )}
               </div>
             )}
 
