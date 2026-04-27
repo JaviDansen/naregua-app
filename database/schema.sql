@@ -1,12 +1,24 @@
 CREATE TABLE usuarios (
     id SERIAL PRIMARY KEY,
-    nome VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
     perfil VARCHAR(50) NOT NULL DEFAULT 'usuario',
-    senha TEXT,
+    senha TEXT NOT NULL,
+    telefone VARCHAR(20),
 
     CONSTRAINT usuarios_perfil_check
-    CHECK (perfil IN ('usuario', 'admin'))
+    CHECK (perfil IN ('usuario', 'admin')),
+
+    CONSTRAINT usuarios_telefone_obrigatorio_check
+    CHECK (
+        perfil = 'admin'
+        OR
+        (
+            perfil = 'usuario'
+            AND telefone IS NOT NULL
+            AND TRIM(telefone) <> ''
+        )
+    )
 );
 
 CREATE TABLE servicos (
