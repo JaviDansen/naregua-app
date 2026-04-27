@@ -10,12 +10,30 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 router.post('/register', async (req, res) => {
-  const { nome, email, senha } = req.body;
+  const {
+    nome,
+    email,
+    senha,
+    telefone,
+    perfil = 'usuario'
+  } = req.body;
 
   try {
     if (!nome || !email || !senha) {
       return res.status(400).json({
         erro: 'nome, email e senha são obrigatórios'
+      });
+    }
+
+    if (perfil === 'usuario' && (!telefone || telefone.trim() === '')) {
+      return res.status(400).json({
+        erro: 'telefone é obrigatório para clientes'
+      });
+    }
+
+    if (!['usuario', 'admin'].includes(perfil)) {
+      return res.status(400).json({
+        erro: 'perfil inválido'
       });
     }
 
@@ -33,18 +51,21 @@ router.post('/register', async (req, res) => {
     const senhaHash = await bcrypt.hash(senha, 10);
 
     const result = await pool.query(
-      `INSERT INTO usuarios (nome, email, senha)
-       VALUES ($1, $2, $3)
-       RETURNING id, nome, email`,
-      [nome, email, senhaHash]
+      `INSERT INTO usuarios
+       (nome, email, senha, telefone, perfil)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, nome, email, telefone, perfil`,
+      [nome, email, senhaHash, telefone || null, perfil]
     );
 
     return res.status(201).json({
       mensagem: 'Usuário cadastrado com sucesso',
       dados: result.rows[0]
     });
+
   } catch (error) {
     console.error('Erro no POST /register:', error);
+
     return res.status(500).json({
       erro: 'Erro ao cadastrar usuário'
     });
