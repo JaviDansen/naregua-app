@@ -13,11 +13,6 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  process.env.FRONTEND_URL,
-].filter(Boolean);
-
 const isAllowedVercelPreview = (origin) => {
   return /^https:\/\/na-regua-[a-z0-9-]+-javidansens-projects\.vercel\.app$/.test(origin);
 };
