@@ -70,18 +70,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (nome, email, senha) => {
-    try {
-      await apiRegister({ nome, email, senha });
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.erro || 'Erro no cadastro'
-      };
-    }
-  };
-
   const register = async (nome, email, senha, telefone) => {
     try {
       await apiRegister({ nome, email, senha, telefone });
