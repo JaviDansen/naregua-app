@@ -1,19 +1,17 @@
+CREATE EXTENSION IF NOT EXISTS citext;
+
 CREATE TABLE usuarios (
     id SERIAL PRIMARY KEY,
 
     nome VARCHAR(100) NOT NULL,
 
-    email VARCHAR(100) NOT NULL,
-    email_normalizado VARCHAR(100) GENERATED ALWAYS AS (LOWER(TRIM(email))) STORED,
+    email CITEXT UNIQUE NOT NULL,
 
     perfil VARCHAR(50) NOT NULL DEFAULT 'usuario',
     senha TEXT NOT NULL,
     telefone VARCHAR(20),
 
     criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT usuarios_email_normalizado_unique
-    UNIQUE (email_normalizado),
 
     CONSTRAINT usuarios_perfil_check
     CHECK (perfil IN ('usuario', 'admin')),
