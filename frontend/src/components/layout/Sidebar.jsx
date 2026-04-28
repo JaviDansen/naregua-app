@@ -26,7 +26,7 @@ const Sidebar = () => {
   return (
     <div className="hidden md:flex flex-col w-64 bg-zinc-900 h-screen p-4">
       <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold">Naregua</h1>
+        <h1 className="text-2xl font-bold">NaReguaApp</h1>
         <p className="text-xs text-zinc-400 mt-1">{areaLabel}</p>
       </div>
 

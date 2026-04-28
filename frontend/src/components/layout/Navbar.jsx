@@ -31,7 +31,7 @@ const Navbar = () => {
     <div className="md:hidden bg-zinc-900 p-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold">Naregua</h1>
+          <h1 className="text-xl font-bold">NaReguaApp</h1>
           <p className="text-xs text-zinc-400">{areaLabel}</p>
         </div>
 
