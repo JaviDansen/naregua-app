@@ -82,15 +82,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setIsAuthenticated(false);
-    
-    // In DEV_MODE, optionally redirect or keep user in app
-    if (!DEV_MODE) {
-      window.location.href = '/login';
+  const register = async (nome, email, senha, telefone) => {
+    try {
+      await apiRegister({ nome, email, senha, telefone });
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.erro || "Erro no cadastro",
+      };
     }
   };
 
