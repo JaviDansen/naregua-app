@@ -27,6 +27,34 @@ router.get('/employees', async (req, res) => {
   }
 });
 
+router.get(
+  '/employees/admin',
+  auth,
+  authorize('admin', 'Acesso negado. Apenas administradores podem visualizar dados completos dos funcionários.'),
+  async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT
+          id,
+          nome,
+          especialidade,
+          telefone
+        FROM funcionarios
+        ORDER BY nome ASC
+      `);
+
+      return res.status(200).json({
+        dados: result.rows
+      });
+    } catch (error) {
+      console.error('Erro no GET /employees/admin:', error.message);
+      return res.status(500).json({
+        erro: 'Erro ao buscar funcionários para administração'
+      });
+    }
+  }
+);
+
 router.post(
   '/employees',
   auth,
