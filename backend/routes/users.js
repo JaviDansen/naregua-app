@@ -54,7 +54,7 @@ router.post('/register', async (req, res) => {
       `INSERT INTO usuarios
        (nome, email, senha, telefone, perfil)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, nome, email, telefone, perfil`,
+       RETURNING id, nome, email, perfil`,
       [nome, email, senhaHash, telefone || null, perfil]
     );
 
@@ -132,6 +132,32 @@ router.post('/login', async (req, res) => {
     console.error('Erro no POST /login:', error);
     return res.status(500).json({
       erro: 'Erro ao realizar login'
+    });
+  }
+});
+
+router.get('/profile', auth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, nome, email, perfil, telefone
+       FROM usuarios
+       WHERE id = $1`,
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Usuário não encontrado'
+      });
+    }
+
+    return res.status(200).json({
+      dados: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Erro no GET /profile:', error.message);
+    return res.status(500).json({
+      erro: 'Erro ao buscar perfil do usuário'
     });
   }
 });

@@ -9,3 +9,8 @@ export const register = async (data) => {
   const response = await api.post('/register', data);
   return response.data.dados;
 };
+
+export const getProfile = async () => {
+  const response = await api.get('/profile');
+  return response.data.dados;
+};
