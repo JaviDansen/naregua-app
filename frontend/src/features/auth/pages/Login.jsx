@@ -20,7 +20,7 @@ const Login = () => {
     try {
       const result = await login(email, senha);
       if (result.success) {
-        navigate(result.user.role === 'admin' ? '/dashboard/admin' : '/dashboard/cliente');
+        navigate('/dashboard');
       } else {
         setError(result.error || 'Credenciais inválidas');
       }
