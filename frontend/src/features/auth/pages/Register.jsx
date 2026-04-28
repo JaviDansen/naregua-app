@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
+import { formatPhone, isValidPhone } from '../../../utils/phone';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -19,22 +20,6 @@ const Register = () => {
 
   const { register } = useAuth();
   const navigate = useNavigate();
-
-  const formatTelefone = (value) => {
-    const numbers = value.replace(/\D/g, '').slice(0, 11);
-
-    if (numbers.length <= 2) return numbers;
-
-    if (numbers.length <= 6) {
-      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
-    }
-
-    if (numbers.length <= 10) {
-      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
-    }
-
-    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,7 +38,7 @@ const Register = () => {
 
     const telefoneNumeros = formData.telefone.replace(/\D/g, '');
 
-    if (telefoneNumeros.length < 10 || telefoneNumeros.length > 11) {
+    if (!isValidPhone(formData.telefone)) {
       setError('Informe um telefone válido com DDD.');
       return;
     }
@@ -187,7 +172,7 @@ const Register = () => {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        telefone: formatTelefone(e.target.value)
+                        telefone: formatPhone(e.target.value)
                       })
                     }
                     required
