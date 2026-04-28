@@ -65,7 +65,8 @@ const Employees = () => {
   const handleSubmit = async () => {
     if (!nome.trim()) return alert("Informe o nome do funcionário.");
     if (!especialidade.trim()) return alert("Informe a especialidade do funcionário.");
-    if (telefone && !isValidPhone(telefone)) return alert("Informe um telefone válido com DDD.");
+    if (!telefone.trim()) return alert("Informe o telefone do funcionário.");
+    if (!isValidPhone(telefone)) return alert("Informe um telefone válido com DDD.");
 
     const payload = {
       nome: nome.trim(),
@@ -172,7 +173,13 @@ const Employees = () => {
 
         <Input label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
         <Input label="Especialidade" value={especialidade} onChange={(e) => setEspecialidade(e.target.value)} required />
-        <Input label="Telefone" value={telefone} onChange={(e) => setTelefone(formatPhone(e.target.value))} placeholder="(98) 99999-9999" />
+        <Input
+          label="Telefone"
+          value={telefone}
+          onChange={(e) => setTelefone(formatPhone(e.target.value))}
+          placeholder="(98) 99999-9999"
+          required
+        />
 
         <Button
           onClick={handleSubmit}
