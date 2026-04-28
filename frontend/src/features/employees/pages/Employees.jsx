@@ -21,7 +21,33 @@ const Employees = () => {
   const { user } = useAuth();
   const isAdmin = user?.perfil === 'admin';
 
+  const formatTelefone = (value) => {
+    const numbers = value.replace(/\D/g, "").slice(0, 11);
+
+    if (numbers.length <= 2) return numbers;
+
+    if (numbers.length <= 6) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    }
+
+    if (numbers.length <= 10) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+    }
+
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  };
+
   const handleCreate = async () => {
+    const telefoneNumeros = telefone.replace(/\D/g, "");
+
+    if (
+      telefone &&
+      (telefoneNumeros.length < 10 || telefoneNumeros.length > 11)
+    ) {
+      alert("Informe um telefone válido com DDD.");
+      return;
+    }
+    
     await createEmployeeMutation.mutateAsync({ nome, especialidade, telefone });
     setIsModalOpen(false);
     setNome('');
@@ -85,7 +111,8 @@ const Employees = () => {
         <Input
           label="Telefone"
           value={telefone}
-          onChange={(e) => setTelefone(e.target.value)}
+          onChange={(e) => setTelefone(formatTelefone(e.target.value))}
+          placeholder="(98) 99999-9999"
         />
         <Button onClick={handleCreate} loading={createEmployeeMutation.isPending}>
           Criar
