@@ -45,7 +45,7 @@ const Login = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
           <div className="absolute bottom-16 left-12 right-12 z-10">
             <h1 className="text-6xl font-black italic uppercase text-white tracking-tighter leading-none mb-6">
-              NA<span className="text-[#e11d48]">REGUA</span>
+              Na<span className="text-[#e11d48]">Regua</span>App
             </h1>
             <h2 className="text-4xl font-bold text-white mb-4 leading-tight">
               Sua barbearia, <br/>em outro nível.
