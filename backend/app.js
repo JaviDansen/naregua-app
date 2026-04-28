@@ -13,6 +13,15 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+const isAllowedVercelPreview = (origin) => {
+  return /^https:\/\/na-regua-[a-z0-9-]+-javidansens-projects\.vercel\.app$/.test(origin);
+};
+
 const corsOptions = {
   origin: (origin, callback) => {
     // Permite requisições sem origin, como Thunder Client/Postman
@@ -20,7 +29,7 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    if (allowedOrigins.includes(origin)) {
+    if (allowedOrigins.includes(origin) || isAllowedVercelPreview(origin)) {
       return callback(null, true);
     }
 
