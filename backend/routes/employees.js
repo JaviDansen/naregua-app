@@ -60,34 +60,50 @@ router.post(
   auth,
   authorize('admin', 'Acesso negado. Apenas administradores podem cadastrar funcionários.'),
   async (req, res) => {
-  const { nome, especialidade, telefone } = req.body;
-  try {
-    const result = await pool.query(
-    `INSERT INTO funcionarios (nome, especialidade, telefone)
-      VALUES ($1, $2, $3)
-      RETURNING
-        id,
-        nome,
-        especialidade,
-        telefone,
-        TO_CHAR(
-          criado_em AT TIME ZONE 'America/Sao_Paulo',
-          'YYYY-MM-DD"T"HH24:MI:SS'
-        ) || '-03:00' AS criado_em`,
-      [nome, especialidade, telefone]
-    );
+    const { nome, especialidade, telefone } = req.body;
 
-    return res.status(201).json({
-      mensagem: 'Funcionário criado com sucesso',
-      dados: result.rows[0]
-    });
-  } catch (error) {
-    console.error('Erro no POST /employees:', error.message);
-    return res.status(500).json({
-      erro: 'Erro ao criar funcionário'
-    });
+    try {
+      if (
+        !nome?.trim() ||
+        !especialidade?.trim() ||
+        !telefone?.trim()
+      ) {
+        return res.status(400).json({
+          erro: 'Os campos nome, especialidade e telefone são obrigatórios para cadastrar um funcionário.'
+        });
+      }
+
+      const result = await pool.query(
+        `INSERT INTO funcionarios (nome, especialidade, telefone)
+          VALUES ($1, $2, $3)
+          RETURNING
+            id,
+            nome,
+            especialidade,
+            telefone,
+            TO_CHAR(
+              criado_em AT TIME ZONE 'America/Sao_Paulo',
+              'YYYY-MM-DD"T"HH24:MI:SS'
+            ) || '-03:00' AS criado_em`,
+        [
+          nome.trim(),
+          especialidade.trim(),
+          telefone.trim()
+        ]
+      );
+
+      return res.status(201).json({
+        mensagem: 'Funcionário criado com sucesso',
+        dados: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Erro no POST /employees:', error.message);
+      return res.status(500).json({
+        erro: 'Erro ao criar funcionário'
+      });
+    }
   }
-});
+);
 
 router.put(
   '/employees/:id',
