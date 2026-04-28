@@ -103,4 +103,57 @@ router.put(
   }
 );
 
+router.delete(
+  '/services/:id',
+  auth,
+  authorize('admin', 'Acesso negado. Apenas administradores podem excluir serviços.'),
+  async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      if (isNaN(Number(id))) {
+        return res.status(400).json({
+          erro: 'ID do serviço inválido. Informe um identificador numérico válido.'
+        });
+      }
+
+      const servicoExistente = await pool.query(
+        `SELECT id FROM servicos WHERE id = $1`,
+        [id]
+      );
+
+      if (servicoExistente.rows.length === 0) {
+        return res.status(404).json({
+          erro: 'Serviço não encontrado para o ID informado.'
+        });
+      }
+
+      const agendamentoVinculado = await pool.query(
+        `SELECT id FROM agendamentos WHERE servico_id = $1 LIMIT 1`,
+        [id]
+      );
+
+      if (agendamentoVinculado.rows.length > 0) {
+        return res.status(409).json({
+          erro: 'Não é possível excluir este serviço porque existem agendamentos vinculados a ele.'
+        });
+      }
+
+      await pool.query(
+        `DELETE FROM servicos WHERE id = $1`,
+        [id]
+      );
+
+      return res.status(200).json({
+        mensagem: 'Serviço excluído com sucesso.'
+      });
+    } catch (error) {
+      console.error('Erro no DELETE /services/:id:', error.message);
+      return res.status(500).json({
+        erro: 'Erro ao excluir serviço. Tente novamente.'
+      });
+    }
+  }
+);
+
 module.exports = router;
