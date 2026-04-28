@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
   useServices,
   useCreateService,
-  useUpdateService
+  useUpdateService,
+  useDeleteService
 } from "../../../hooks/useApi";
 
 import Sidebar from "../../../components/layout/Sidebar";
@@ -20,6 +21,7 @@ const Services = () => {
   const { data: services, isLoading } = useServices();
   const createServiceMutation = useCreateService();
   const updateServiceMutation = useUpdateService();
+  const deleteServiceMutation = useDeleteService();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
@@ -55,20 +57,9 @@ const Services = () => {
   };
 
   const handleSubmit = async () => {
-    if (!nome.trim()) {
-      alert("Informe o nome do serviço.");
-      return;
-    }
-
-    if (!preco || Number(preco) <= 0) {
-      alert("Informe um preço válido.");
-      return;
-    }
-
-    if (!duracao || Number(duracao) <= 0) {
-      alert("Informe uma duração válida.");
-      return;
-    }
+    if (!nome.trim()) return alert("Informe o nome do serviço.");
+    if (!preco || Number(preco) <= 0) return alert("Informe um preço válido.");
+    if (!duracao || Number(duracao) <= 0) return alert("Informe uma duração válida.");
 
     const payload = {
       nome: nome.trim(),
@@ -86,6 +77,20 @@ const Services = () => {
     }
 
     resetForm();
+  };
+
+  const handleDelete = async (service) => {
+    const confirmar = window.confirm(
+      `Tem certeza que deseja excluir o serviço "${service.nome}"?`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      await deleteServiceMutation.mutateAsync(service.id);
+    } catch (error) {
+      alert(error.response?.data?.erro || "Erro ao excluir serviço.");
+    }
   };
 
   return (
@@ -119,13 +124,24 @@ const Services = () => {
                   <ServiceCard service={service} />
 
                   {isAdmin && (
-                    <Button
-                      variant="secondary"
-                      onClick={() => openEditModal(service)}
-                      className="mt-3 w-full"
-                    >
-                      Editar
-                    </Button>
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        variant="secondary"
+                        onClick={() => openEditModal(service)}
+                        className="w-full"
+                      >
+                        Editar
+                      </Button>
+
+                      <Button
+                        variant="danger"
+                        onClick={() => handleDelete(service)}
+                        loading={deleteServiceMutation.isPending}
+                        className="w-full"
+                      >
+                        Excluir
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -145,28 +161,9 @@ const Services = () => {
           {editingService ? "Editar Serviço" : "Adicionar Serviço"}
         </h2>
 
-        <Input
-          label="Nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          required
-        />
-
-        <Input
-          label="Preço (R$)"
-          type="number"
-          value={preco}
-          onChange={(e) => setPreco(e.target.value)}
-          required
-        />
-
-        <Input
-          label="Duração (min)"
-          type="number"
-          value={duracao}
-          onChange={(e) => setDuracao(e.target.value)}
-          required
-        />
+        <Input label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+        <Input label="Preço (R$)" type="number" value={preco} onChange={(e) => setPreco(e.target.value)} required />
+        <Input label="Duração (min)" type="number" value={duracao} onChange={(e) => setDuracao(e.target.value)} required />
 
         <Button
           onClick={handleSubmit}

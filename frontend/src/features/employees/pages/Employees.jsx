@@ -3,7 +3,8 @@ import {
   useEmployees,
   useAdminEmployees,
   useCreateEmployee,
-  useUpdateEmployee
+  useUpdateEmployee,
+  useDeleteEmployee
 } from "../../../hooks/useApi";
 
 import Sidebar from "../../../components/layout/Sidebar";
@@ -29,6 +30,7 @@ const Employees = () => {
 
   const createEmployeeMutation = useCreateEmployee();
   const updateEmployeeMutation = useUpdateEmployee();
+  const deleteEmployeeMutation = useDeleteEmployee();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -61,20 +63,9 @@ const Employees = () => {
   };
 
   const handleSubmit = async () => {
-    if (!nome.trim()) {
-      alert("Informe o nome do funcionário.");
-      return;
-    }
-
-    if (!especialidade.trim()) {
-      alert("Informe a especialidade do funcionário.");
-      return;
-    }
-
-    if (telefone && !isValidPhone(telefone)) {
-      alert("Informe um telefone válido com DDD.");
-      return;
-    }
+    if (!nome.trim()) return alert("Informe o nome do funcionário.");
+    if (!especialidade.trim()) return alert("Informe a especialidade do funcionário.");
+    if (telefone && !isValidPhone(telefone)) return alert("Informe um telefone válido com DDD.");
 
     const payload = {
       nome: nome.trim(),
@@ -92,6 +83,20 @@ const Employees = () => {
     }
 
     resetForm();
+  };
+
+  const handleDelete = async (employee) => {
+    const confirmar = window.confirm(
+      `Tem certeza que deseja excluir o funcionário "${employee.nome}"?`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      await deleteEmployeeMutation.mutateAsync(employee.id);
+    } catch (error) {
+      alert(error.response?.data?.erro || "Erro ao excluir funcionário.");
+    }
   };
 
   return (
@@ -130,13 +135,22 @@ const Employees = () => {
                   )}
 
                   {isAdmin && (
-                    <Button
-                      variant="secondary"
-                      onClick={() => openEditModal(employee)}
-                      className="mt-3"
-                    >
-                      Editar
-                    </Button>
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        variant="secondary"
+                        onClick={() => openEditModal(employee)}
+                      >
+                        Editar
+                      </Button>
+
+                      <Button
+                        variant="danger"
+                        onClick={() => handleDelete(employee)}
+                        loading={deleteEmployeeMutation.isPending}
+                      >
+                        Excluir
+                      </Button>
+                    </div>
                   )}
                 </Card>
               ))}
@@ -156,26 +170,9 @@ const Employees = () => {
           {editingEmployee ? "Editar Funcionário" : "Adicionar Funcionário"}
         </h2>
 
-        <Input
-          label="Nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          required
-        />
-
-        <Input
-          label="Especialidade"
-          value={especialidade}
-          onChange={(e) => setEspecialidade(e.target.value)}
-          required
-        />
-
-        <Input
-          label="Telefone"
-          value={telefone}
-          onChange={(e) => setTelefone(formatPhone(e.target.value))}
-          placeholder="(98) 99999-9999"
-        />
+        <Input label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+        <Input label="Especialidade" value={especialidade} onChange={(e) => setEspecialidade(e.target.value)} required />
+        <Input label="Telefone" value={telefone} onChange={(e) => setTelefone(formatPhone(e.target.value))} placeholder="(98) 99999-9999" />
 
         <Button
           onClick={handleSubmit}

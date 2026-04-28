@@ -14,3 +14,8 @@ export const updateService = async (id, data) => {
   const response = await api.put(`/services/${id}`, data);
   return response.data.dados;
 };
+
+export const deleteService = async (id) => {
+  const response = await api.delete(`/services/${id}`);
+  return response.data;
+};

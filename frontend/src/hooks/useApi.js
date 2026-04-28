@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getServices, createService, updateService } from '../api/services.api';
-import { getEmployees, getAdminEmployees, createEmployee, updateEmployee } from '../api/employees.api';
+import { getServices, createService, updateService, deleteService } from '../api/services.api';
+import { getEmployees, getAdminEmployees, createEmployee, updateEmployee, deleteEmployee } from '../api/employees.api';
 import {
   getAppointments,
   getMyAppointments,
@@ -41,6 +41,17 @@ export const useUpdateService = () => {
   });
 };
 
+export const useDeleteService = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+    },
+  });
+};
+
 export const useEmployees = () => {
   return useQuery({
     queryKey: ['employees'],
@@ -72,6 +83,18 @@ export const useUpdateEmployee = () => {
 
   return useMutation({
     mutationFn: ({ id, data }) => updateEmployee(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees', 'admin'] });
+    },
+  });
+};
+
+export const useDeleteEmployee = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteEmployee,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['employees', 'admin'] });
