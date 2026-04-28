@@ -1,7 +1,10 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, register as apiRegister } from "../../../api/auth.api";
-import { DEV_MODE } from '../../../config/devMode';
-import { mockUser, mockToken } from '../../../api/mocks/mockData';
+import { createContext, useContext, useState, useEffect } from "react";
+import {
+  login as apiLogin,
+  register as apiRegister,
+} from "../../../api/auth.api";
+import { DEV_MODE } from "../../../config/devMode";
+import { mockUser, mockToken } from "../../../api/mocks/mockData";
 
 const AuthContext = createContext();
 
@@ -10,7 +13,7 @@ export { AuthContext };
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -22,8 +25,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
       if (token && storedUser) {
         setIsAuthenticated(true);
@@ -32,13 +35,13 @@ export const AuthProvider = ({ children }) => {
         // Auto-login in DEV_MODE
         try {
           await apiLogin({
-            email: 'admin@example.com',
-            senha: 'password123',
+            email: "admin@example.com",
+            senha: "password123",
           });
           setIsAuthenticated(true);
           setUser(mockUser);
         } catch (error) {
-          console.error('Auto-login failed:', error);
+          console.error("Auto-login failed:", error);
         }
       }
 
@@ -54,18 +57,17 @@ export const AuthProvider = ({ children }) => {
 
       const { token, usuario } = data;
 
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(usuario));
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(usuario));
 
       setUser(usuario);
       setIsAuthenticated(true);
 
       return { success: true };
-
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.erro || 'Erro no login'
+        error: error.response?.data?.erro || "Erro no login",
       };
     }
   };
@@ -82,18 +84,32 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    setUser(null);
+    setIsAuthenticated(false);
+
+    if (!DEV_MODE) {
+      window.location.href = "/login";
+    }
+  };
+
   const getUser = () => user;
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoading,
-      login,
-      register,
-      logout,
-      getUser
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        isLoading,
+        login,
+        register,
+        logout,
+        getUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
