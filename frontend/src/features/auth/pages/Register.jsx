@@ -24,11 +24,29 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.senha !== formData.confirmarSenha) return setError('As senhas não coincidem');
+
+    if (formData.senha !== formData.confirmarSenha) {
+      return setError('As senhas não coincidem');
+    }
+
+    const telefoneNumeros = formData.telefone.replace(/\D/g, '');
+
+    if (telefoneNumeros.length < 10 || telefoneNumeros.length > 11) {
+      setError('Informe um telefone válido com DDD.');
+      return;
+    }
+
     setLoading(true);
     setError('');
+
     try {
-      const result = await register(formData);
+      const result = await register(
+        formData.nome,
+        formData.email,
+        formData.senha,
+        formData.telefone
+      );
+
       if (result.success) navigate('/login');
       else setError(result.error || 'Erro ao criar conta');
     } catch (err) {
