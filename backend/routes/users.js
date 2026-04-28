@@ -138,11 +138,19 @@ router.post('/login', async (req, res) => {
 
 router.get('/profile', auth, async (req, res) => {
   try {
+    const usuarioId = req.usuario?.id;
+
+    if (!usuarioId) {
+      return res.status(401).json({
+        erro: 'Usuário autenticado não identificado'
+      });
+    }
+
     const result = await pool.query(
       `SELECT id, nome, email, perfil, telefone
        FROM usuarios
        WHERE id = $1`,
-      [req.user.id]
+      [usuarioId]
     );
 
     if (result.rows.length === 0) {
