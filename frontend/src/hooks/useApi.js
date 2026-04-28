@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getServices, createService } from '../api/services.api';
-import { getEmployees, createEmployee } from '../api/employees.api';
+import { getServices, createService, updateService } from '../api/services.api';
+import { getEmployees, getAdminEmployees, createEmployee, updateEmployee } from '../api/employees.api';
 import {
   getAppointments,
   getMyAppointments,
@@ -30,10 +30,29 @@ export const useCreateService = () => {
   });
 };
 
+export const useUpdateService = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }) => updateService(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+    },
+  });
+};
+
 export const useEmployees = () => {
   return useQuery({
     queryKey: ['employees'],
     queryFn: getEmployees,
+  });
+};
+
+export const useAdminEmployees = (enabled = true) => {
+  return useQuery({
+    queryKey: ['employees', 'admin'],
+    queryFn: getAdminEmployees,
+    enabled,
   });
 };
 
@@ -44,6 +63,18 @@ export const useCreateEmployee = () => {
     mutationFn: createEmployee,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+    },
+  });
+};
+
+export const useUpdateEmployee = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }) => updateEmployee(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['employees', 'admin'] });
     },
   });
 };

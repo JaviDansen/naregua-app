@@ -9,3 +9,8 @@ export const createService = async (data) => {
   const response = await api.post('/services', data);
   return response.data.dados;
 };
+
+export const updateService = async (id, data) => {
+  const response = await api.put(`/services/${id}`, data);
+  return response.data.dados;
+};

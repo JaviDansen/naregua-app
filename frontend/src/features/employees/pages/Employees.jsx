@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { useEmployees, useCreateEmployee } from "../../../hooks/useApi";
+import {
+  useEmployees,
+  useAdminEmployees,
+  useCreateEmployee,
+  useUpdateEmployee
+} from "../../../hooks/useApi";
+
 import Sidebar from "../../../components/layout/Sidebar";
 import Navbar from "../../../components/layout/Navbar";
 import MobileNav from "../../../components/layout/MobileNav";
@@ -12,39 +18,95 @@ import { useAuth } from '../../auth/hooks/useAuth';
 import { formatPhone, isValidPhone } from "../../../utils/phone";
 
 const Employees = () => {
-  const { data: employees, isLoading } = useEmployees();
+  const { user } = useAuth();
+  const isAdmin = user?.perfil === 'admin';
+
+  const { data: publicEmployees, isLoading: isLoadingPublic } = useEmployees();
+  const { data: adminEmployees, isLoading: isLoadingAdmin } = useAdminEmployees(isAdmin);
+
+  const employees = isAdmin ? adminEmployees : publicEmployees;
+  const isLoading = isAdmin ? isLoadingAdmin : isLoadingPublic;
+
   const createEmployeeMutation = useCreateEmployee();
+  const updateEmployeeMutation = useUpdateEmployee();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
   const [nome, setNome] = useState('');
   const [especialidade, setEspecialidade] = useState('');
   const [telefone, setTelefone] = useState('');
 
-  const { user } = useAuth();
-  const isAdmin = user?.perfil === 'admin';
+  const openCreateModal = () => {
+    setEditingEmployee(null);
+    setNome('');
+    setEspecialidade('');
+    setTelefone('');
+    setIsModalOpen(true);
+  };
 
-  const handleCreate = async () => {
-    if (telefone && !isValidPhone(telefone)) {
-      alert("Informe um telefone válido com DDD.");
-      return;
-    }
-    
-    await createEmployeeMutation.mutateAsync({ nome, especialidade, telefone });
+  const openEditModal = (employee) => {
+    setEditingEmployee(employee);
+    setNome(employee.nome || '');
+    setEspecialidade(employee.especialidade || '');
+    setTelefone(formatPhone(employee.telefone || ''));
+    setIsModalOpen(true);
+  };
+
+  const resetForm = () => {
     setIsModalOpen(false);
+    setEditingEmployee(null);
     setNome('');
     setEspecialidade('');
     setTelefone('');
   };
 
+  const handleSubmit = async () => {
+    if (!nome.trim()) {
+      alert("Informe o nome do funcionário.");
+      return;
+    }
+
+    if (!especialidade.trim()) {
+      alert("Informe a especialidade do funcionário.");
+      return;
+    }
+
+    if (telefone && !isValidPhone(telefone)) {
+      alert("Informe um telefone válido com DDD.");
+      return;
+    }
+
+    const payload = {
+      nome: nome.trim(),
+      especialidade: especialidade.trim(),
+      telefone
+    };
+
+    if (editingEmployee) {
+      await updateEmployeeMutation.mutateAsync({
+        id: editingEmployee.id,
+        data: payload
+      });
+    } else {
+      await createEmployeeMutation.mutateAsync(payload);
+    }
+
+    resetForm();
+  };
+
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
       <Sidebar />
+
       <div className="flex-1">
         <Navbar />
+
         <div className="p-6 pb-20 md:pb-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Funcionários</h1>
+
             {isAdmin && (
-              <Button onClick={() => setIsModalOpen(true)}>
+              <Button onClick={openCreateModal}>
                 Adicionar Funcionário
               </Button>
             )}
@@ -62,7 +124,20 @@ const Employees = () => {
                 <Card key={employee.id}>
                   <h3 className="font-semibold">{employee.nome}</h3>
                   <p className="text-zinc-400">{employee.especialidade}</p>
-                  <p className="text-zinc-400">{employee.telefone}</p>
+
+                  {isAdmin && employee.telefone && (
+                    <p className="text-zinc-400">{employee.telefone}</p>
+                  )}
+
+                  {isAdmin && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => openEditModal(employee)}
+                      className="mt-3"
+                    >
+                      Editar
+                    </Button>
+                  )}
                 </Card>
               ))}
             </div>
@@ -72,30 +147,41 @@ const Employees = () => {
             </Card>
           )}
         </div>
+
         <MobileNav />
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <h2 className="text-xl font-bold mb-4">Adicionar Funcionário</h2>
+      <Modal isOpen={isModalOpen} onClose={resetForm}>
+        <h2 className="text-xl font-bold mb-4">
+          {editingEmployee ? "Editar Funcionário" : "Adicionar Funcionário"}
+        </h2>
+
         <Input
           label="Nome"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           required
         />
+
         <Input
           label="Especialidade"
           value={especialidade}
           onChange={(e) => setEspecialidade(e.target.value)}
+          required
         />
+
         <Input
           label="Telefone"
           value={telefone}
           onChange={(e) => setTelefone(formatPhone(e.target.value))}
           placeholder="(98) 99999-9999"
         />
-        <Button onClick={handleCreate} loading={createEmployeeMutation.isPending}>
-          Criar
+
+        <Button
+          onClick={handleSubmit}
+          loading={createEmployeeMutation.isPending || updateEmployeeMutation.isPending}
+        >
+          {editingEmployee ? "Salvar alterações" : "Criar"}
         </Button>
       </Modal>
     </div>
