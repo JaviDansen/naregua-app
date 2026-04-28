@@ -25,6 +25,8 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    const emailNormalizado = email.trim().toLowerCase();
+
     if (perfil === 'usuario' && (!telefone || telefone.trim() === '')) {
       return res.status(400).json({
         erro: 'telefone é obrigatório para clientes'
@@ -39,7 +41,7 @@ router.post('/register', async (req, res) => {
 
     const usuarioExistente = await pool.query(
       `SELECT id FROM usuarios WHERE email = $1`,
-      [email]
+      [emailNormalizado]
     );
 
     if (usuarioExistente.rows.length > 0) {
@@ -55,7 +57,13 @@ router.post('/register', async (req, res) => {
        (nome, email, senha, telefone, perfil)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id, nome, email, perfil`,
-      [nome, email, senhaHash, telefone || null, perfil]
+      [
+        nome.trim(),
+        emailNormalizado,
+        senhaHash,
+        telefone ? telefone.trim() : null,
+        perfil
+      ]
     );
 
     return res.status(201).json({
@@ -82,11 +90,13 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    const emailNormalizado = email.trim().toLowerCase();
+
     const result = await pool.query(
       `SELECT id, nome, email, senha, perfil
        FROM usuarios
        WHERE email = $1`,
-      [email]
+      [emailNormalizado]
     );
 
     if (result.rows.length === 0) {
