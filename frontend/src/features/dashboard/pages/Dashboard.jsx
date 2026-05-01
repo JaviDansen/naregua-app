@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+
 import { useMyAppointments, useCancelAppointment } from '../../../hooks/useApi';
 import Sidebar from '../../../components/layout/Sidebar';
 import Navbar from '../../../components/layout/Navbar';
@@ -30,6 +33,17 @@ const Dashboard = () => {
 
   const nextAppointment = getNextAppointment(appointments || []);
   const sortedAppointments = sortAppointmentsWithCanceledLast(appointments || []);
+
+  const { data: weather, isLoading: weatherLoading } = useQuery({
+    queryKey: ['weather'],
+    queryFn: async () => {
+      const res = await axios.get(
+        'https://api.open-meteo.com/v1/forecast?latitude=-2.5297&longitude=-44.3028&current_weather=true'
+      );
+
+      return res.data;
+    },
+  });
 
   const handleCancel = async (id) => {
     setSelectedCancelId(id);
@@ -83,9 +97,7 @@ const Dashboard = () => {
             {renderStatusBadge(appt.status)}
           </div>
 
-          <p className="text-zinc-300">
-            {formatDateTime(appt.data_hora)}
-          </p>
+          <p className="text-zinc-300">{formatDateTime(appt.data_hora)}</p>
 
           <p className="text-sm text-zinc-500 mt-1">
             Funcionário: {appt.funcionario}
@@ -141,8 +153,40 @@ const Dashboard = () => {
 
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">
-              Próximo agendamento
+              ☀️ Clima em São Luís
             </h2>
+
+            {weatherLoading ? (
+              <Skeleton className="h-24" />
+            ) : weather?.current_weather ? (
+              <Card className="border border-zinc-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-3xl font-bold">
+                      {weather?.current_weather?.temperature ?? '--'}°C
+                    </p>
+                    <p className="text-zinc-400 text-sm mt-1">
+                      Vento: {weather?.current_weather?.windspeed ?? '--'} km/h
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-zinc-300 font-medium">Tempo atual</p>
+                    <p className="text-zinc-500 text-sm">Dados em tempo real</p>
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              <Card className="border border-zinc-800">
+                <p className="text-zinc-400">
+                  Não foi possível carregar o clima.
+                </p>
+              </Card>
+            )}
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Próximo agendamento</h2>
 
             {isLoading ? (
               <Skeleton className="h-32" />
@@ -169,9 +213,7 @@ const Dashboard = () => {
           </div>
 
           <div>
-            <h2 className="text-xl font-semibold mb-4">
-              Meus agendamentos
-            </h2>
+            <h2 className="text-xl font-semibold mb-4">Meus agendamentos</h2>
 
             {isLoading ? (
               <div className="space-y-4">
