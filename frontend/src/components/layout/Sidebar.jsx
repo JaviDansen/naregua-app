@@ -20,7 +20,10 @@ const Sidebar = () => {
       ? [{ path: '/appointments/manage', label: 'Gerenciar Agendamentos' }]
       : []),
     { path: '/appointments/new', label: 'Novo Agendamento' },
-    { path: '/profile', label: 'Perfil' },
+    ...(isAdmin
+      ? [{ path: '/clients', label: 'Clientes' }]
+      : [{ path: '/profile', label: 'Perfil' }]
+    ),
   ];
 
   return (

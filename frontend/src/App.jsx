@@ -12,6 +12,7 @@ import NewAppointment from './features/appointments/pages/NewAppointment';
 import ManageAppointments from './features/appointments/pages/ManageAppointments';
 import EditAppointment from './features/appointments/pages/EditAppointment';
 import Profile from './features/profile/pages/Profile';
+import Clients from './features/clients/pages/Clients';
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,15 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <EditAppointment />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/clients"
+              element={
+                <ProtectedRoute>
+                  <Clients />
                 </ProtectedRoute>
               }
             />
