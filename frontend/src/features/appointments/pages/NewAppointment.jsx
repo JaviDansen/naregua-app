@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useServices, useEmployees, useCreateAppointment } from '../../../hooks/useApi';
+import {
+  useServices,
+  useEmployees,
+  useCreateAppointment,
+  useUsers,
+} from '../../../hooks/useApi';
+import { useAuth } from '../../auth/hooks/useAuth';
 import Sidebar from '../../../components/layout/Sidebar';
 import Navbar from '../../../components/layout/Navbar';
 import MobileNav from '../../../components/layout/MobileNav';
@@ -11,36 +17,61 @@ import Modal from '../../../components/ui/Modal';
 import TimeSlotPicker from '../components/TimeSlotPicker';
 import {
   formatInputDate,
-  getDateInputValueFromIso,
   getMinDateInputValue,
-  getTimeInputValueFromIso,
   isPastDateTime,
 } from '../../../utils/formatDate';
 
 const NewAppointment = () => {
   const navigate = useNavigate();
+
+  const { user } = useAuth();
+  const isAdmin = user?.perfil === 'admin';
+
   const {
     data: services,
     isLoading: loadingServices,
   } = useServices();
+
   const {
     data: employees,
     isLoading: loadingEmployees,
   } = useEmployees();
+
+  const {
+    data: users,
+    isLoading: loadingUsers,
+  } = useUsers(isAdmin);
+
   const createAppointmentMutation = useCreateAppointment();
 
   const [step, setStep] = useState(1);
+  const [selectedUser, setSelectedUser] = useState('');
   const [selectedService, setSelectedService] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
+  const totalSteps = isAdmin ? 5 : 4;
+
   const serviceOptions =
-    services?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
+    services?.map((s) => ({
+      value: s.id,
+      label: s.nome,
+      duracao: s.duracao,
+    })) || [];
 
   const employeeOptions =
-    employees?.map((e) => ({ value: e.id, label: e.nome })) || [];
+    employees?.map((e) => ({
+      value: e.id,
+      label: e.nome,
+    })) || [];
+
+  const userOptions =
+    users?.map((u) => ({
+      value: u.id,
+      label: `${u.nome} — ${u.email}`,
+    })) || [];
 
   const selectedServiceDuration =
     Number(
@@ -54,14 +85,16 @@ const NewAppointment = () => {
   }, [selectedDate, selectedEmployee, selectedService]);
 
   const handleNext = () => {
-    if (step === 3 && selectedDate < getMinDateInputValue()) {
+    const dateStep = isAdmin ? 4 : 3;
+
+    if (step === dateStep && selectedDate < getMinDateInputValue()) {
       alert('Não é possível selecionar uma data passada.');
       setSelectedDate('');
       setSelectedTime('');
       return;
     }
 
-    if (step < 4) setStep(step + 1);
+    if (step < totalSteps) setStep(step + 1);
   };
 
   const handleBack = () => {
@@ -70,6 +103,11 @@ const NewAppointment = () => {
 
   const handleConfirm = async () => {
     try {
+      if (isAdmin && !selectedUser) {
+        alert('Selecione o cliente do agendamento.');
+        return;
+      }
+
       if (isPastDateTime(selectedDate, selectedTime)) {
         alert('Selecione uma data e horário futuros para o agendamento.');
         return;
@@ -77,11 +115,17 @@ const NewAppointment = () => {
 
       const data_hora = `${selectedDate}T${selectedTime}:00`;
 
-      await createAppointmentMutation.mutateAsync({
+      const payload = {
         servico_id: Number(selectedService),
         funcionario_id: Number(selectedEmployee),
         data_hora,
-      });
+      };
+
+      if (isAdmin) {
+        payload.usuario_id = Number(selectedUser);
+      }
+
+      await createAppointmentMutation.mutateAsync(payload);
 
       navigate('/dashboard');
     } catch (error) {
@@ -100,17 +144,28 @@ const NewAppointment = () => {
   const canProceed = () => {
     switch (step) {
       case 1:
-        return selectedService;
+        return isAdmin ? selectedUser : selectedService;
       case 2:
-        return selectedEmployee;
+        return isAdmin ? selectedService : selectedEmployee;
       case 3:
-        return selectedDate;
+        return isAdmin ? selectedEmployee : selectedDate;
       case 4:
+        return isAdmin ? selectedDate : selectedTime;
+      case 5:
         return selectedTime;
       default:
         return false;
     }
   };
+
+  const selectedUserLabel =
+    userOptions.find((u) => Number(u.value) === Number(selectedUser))?.label;
+
+  const selectedServiceLabel =
+    serviceOptions.find((s) => Number(s.value) === Number(selectedService))?.label;
+
+  const selectedEmployeeLabel =
+    employeeOptions.find((e) => Number(e.value) === Number(selectedEmployee))?.label;
 
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
@@ -125,9 +180,32 @@ const NewAppointment = () => {
           </h1>
 
           <Card>
-            {step === 1 && (
+            {isAdmin && step === 1 && (
               <div>
-                <h2 className="text-xl mb-4">Passo 1: Selecione o Serviço</h2>
+                <h2 className="text-xl mb-4">
+                  Passo 1: Selecione o Cliente
+                </h2>
+
+                {loadingUsers ? (
+                  <p className="text-zinc-400">Carregando clientes...</p>
+                ) : (
+                  <Select
+                    label="Cliente"
+                    value={selectedUser}
+                    onChange={(e) => setSelectedUser(e.target.value)}
+                    options={userOptions}
+                    required
+                  />
+                )}
+              </div>
+            )}
+
+            {(isAdmin ? step === 2 : step === 1) && (
+              <div>
+                <h2 className="text-xl mb-4">
+                  Passo {isAdmin ? 2 : 1}: Selecione o Serviço
+                </h2>
+
                 {loadingServices ? (
                   <p className="text-zinc-400">Carregando serviços...</p>
                 ) : (
@@ -142,11 +220,12 @@ const NewAppointment = () => {
               </div>
             )}
 
-            {step === 2 && (
+            {(isAdmin ? step === 3 : step === 2) && (
               <div>
                 <h2 className="text-xl mb-4">
-                  Passo 2: Selecione o Funcionário
+                  Passo {isAdmin ? 3 : 2}: Selecione o Funcionário
                 </h2>
+
                 {loadingEmployees ? (
                   <p className="text-zinc-400">Carregando funcionários...</p>
                 ) : (
@@ -161,19 +240,23 @@ const NewAppointment = () => {
               </div>
             )}
 
-            {step === 3 && (
+            {(isAdmin ? step === 4 : step === 3) && (
               <div>
-                <h2 className="text-xl mb-4">Passo 3: Selecione a Data</h2>
+                <h2 className="text-xl mb-4">
+                  Passo {isAdmin ? 4 : 3}: Selecione a Data
+                </h2>
+
                 <div className="mb-4">
                   <label className="block text-sm mb-1 text-zinc-400">
                     Data
                   </label>
+
                   <input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => {
                       setSelectedDate(e.target.value);
-                      setSelectedTime("");
+                      setSelectedTime('');
                     }}
                     className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 focus:outline-none focus:border-blue-500 text-white"
                     min={getMinDateInputValue()}
@@ -183,9 +266,11 @@ const NewAppointment = () => {
               </div>
             )}
 
-            {step === 4 && (
+            {(isAdmin ? step === 5 : step === 4) && (
               <div>
-                <h2 className="text-xl mb-4">Passo 4: Selecione o Horário</h2>
+                <h2 className="text-xl mb-4">
+                  Passo {isAdmin ? 5 : 4}: Selecione o Horário
+                </h2>
 
                 {selectedDate < getMinDateInputValue() ? (
                   <p className="text-red-400">
@@ -211,7 +296,7 @@ const NewAppointment = () => {
                 </Button>
               )}
 
-              {step < 4 ? (
+              {step < totalSteps ? (
                 <Button onClick={handleNext} disabled={!canProceed()}>
                   Próximo
                 </Button>
@@ -235,22 +320,11 @@ const NewAppointment = () => {
         onClose={() => setIsConfirmModalOpen(false)}
       >
         <h2 className="text-xl font-bold mb-4">Confirmar Agendamento</h2>
-        <p>
-          Serviço:{" "}
-          {
-            serviceOptions.find(
-              (s) => Number(s.value) === Number(selectedService),
-            )?.label
-          }
-        </p>
-        <p>
-          Funcionário:{" "}
-          {
-            employeeOptions.find(
-              (e) => Number(e.value) === Number(selectedEmployee),
-            )?.label
-          }
-        </p>
+
+        {isAdmin && <p>Cliente: {selectedUserLabel}</p>}
+
+        <p>Serviço: {selectedServiceLabel}</p>
+        <p>Funcionário: {selectedEmployeeLabel}</p>
         <p>Data: {formatInputDate(selectedDate)}</p>
         <p>Hora: {selectedTime}</p>
 

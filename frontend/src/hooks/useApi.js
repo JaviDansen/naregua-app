@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getServices, createService, updateService, deleteService } from '../api/services.api';
 import { getEmployees, getAdminEmployees, createEmployee, updateEmployee, deleteEmployee } from '../api/employees.api';
+import { getUsers } from '../api/users.api';
 import {
   getAppointments,
   getMyAppointments,
@@ -199,5 +200,13 @@ export const useNoShowAppointment = () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
     },
+  });
+};
+
+export const useUsers = (enabled = true) => {
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: getUsers,
+    enabled,
   });
 };
