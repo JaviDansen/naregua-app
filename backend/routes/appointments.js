@@ -58,6 +58,32 @@ function parseLocalDateTime(dataHora) {
   return new Date(ano, mes - 1, dia, hora, minuto, 0);
 }
 
+function getNowInSaoPauloAsLocalDate() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value])
+  );
+
+  return new Date(
+    Number(values.year),
+    Number(values.month) - 1,
+    Number(values.day),
+    Number(values.hour),
+    Number(values.minute),
+    Number(values.second)
+  );
+}
+
 // Criar agendamento
 router.post("/appointments", auth, async (req, res) => {
   const {
@@ -99,7 +125,7 @@ router.post("/appointments", auth, async (req, res) => {
       });
     }
 
-    if (dataHoraLocal < new Date()) {
+    if (dataHoraLocal < getNowInSaoPauloAsLocalDate()) {
       return res.status(400).json({
         erro: "Não é possível criar agendamento em data/hora passada",
       });
@@ -390,7 +416,7 @@ router.put("/appointments/:id", auth, async (req, res) => {
       });
     }
 
-    if (dataHoraLocal < new Date()) {
+    if (dataHoraLocal < getNowInSaoPauloAsLocalDate()) {
       return res.status(400).json({
         erro: "Não é possível editar agendamento para data/hora passada",
       });
