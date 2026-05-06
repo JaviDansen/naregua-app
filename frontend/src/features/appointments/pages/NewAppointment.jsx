@@ -68,10 +68,10 @@ const NewAppointment = () => {
     })) || [];
 
   const userOptions =
-    users?.map((u) => ({
-      value: u.id,
-      label: `${u.nome} — ${u.email}`,
-    })) || [];
+  users?.map((u) => ({
+    value: u.id,
+    label: `${u.nome} — ${u.telefone || 'telefone não informado'}`,
+  })) || [];
 
   const selectedServiceDuration =
     Number(
@@ -158,14 +158,15 @@ const NewAppointment = () => {
     }
   };
 
-  const selectedUserLabel =
-    userOptions.find((u) => Number(u.value) === Number(selectedUser))?.label;
-
   const selectedServiceLabel =
     serviceOptions.find((s) => Number(s.value) === Number(selectedService))?.label;
 
   const selectedEmployeeLabel =
     employeeOptions.find((e) => Number(e.value) === Number(selectedEmployee))?.label;
+
+  const selectedUserData = users?.find(
+    (u) => Number(u.id) === Number(selectedUser)
+  );
 
   return (
     <div className="flex min-h-screen bg-zinc-950 text-white">
@@ -321,7 +322,13 @@ const NewAppointment = () => {
       >
         <h2 className="text-xl font-bold mb-4">Confirmar Agendamento</h2>
 
-        {isAdmin && <p>Cliente: {selectedUserLabel}</p>}
+        {isAdmin && (
+          <>
+            <p>Cliente: {selectedUserData?.nome}</p>
+            <p>Telefone: {selectedUserData?.telefone || 'não informado'}</p>
+            <p>Email: {selectedUserData?.email}</p>
+          </>
+        )}
 
         <p>Serviço: {selectedServiceLabel}</p>
         <p>Funcionário: {selectedEmployeeLabel}</p>
