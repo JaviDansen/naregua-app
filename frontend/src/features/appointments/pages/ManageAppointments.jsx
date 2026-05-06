@@ -37,6 +37,15 @@ const ManageAppointments = () => {
                 new Date(appt.data_hora) > new Date()
         )
         .sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
+    
+    const pendingFinalizationAppointments = appointments
+    .filter(
+        (appt) =>
+            isActiveAppointment(appt.status) &&
+            !isToday(appt.data_hora) &&
+            new Date(appt.data_hora) < new Date()
+    )
+    .sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
 
     const historyAppointments = appointments
         .filter((appt) => !isActiveAppointment(appt.status))
@@ -104,7 +113,7 @@ const ManageAppointments = () => {
     );
 
     const renderActions = (appt, type) => {
-        if (type === 'today') {
+        if (type === 'today' || type === 'pending-finalization') {
             return (
                 <div className="flex gap-2 flex-wrap">
                     <Button
@@ -274,6 +283,42 @@ const ManageAppointments = () => {
                                     </Card>
                                 )}
                             </section>
+
+                                <section>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <h2 className="text-xl font-semibold">
+                                                Pendentes de finalização
+                                            </h2>
+
+                                            <p className="text-zinc-500 text-sm">
+                                                Agendamentos ativos de datas passadas que ainda precisam
+                                                ser concluídos ou marcados como falta.
+                                            </p>
+                                        </div>
+
+                                        <span className="rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-300 px-3 py-1 text-sm">
+                                            {pendingFinalizationAppointments.length} pendente(s)
+                                        </span>
+                                    </div>
+
+                                    {pendingFinalizationAppointments.length > 0 ? (
+                                        renderAppointmentTable(
+                                            pendingFinalizationAppointments,
+                                            'pending-finalization'
+                                        )
+                                    ) : (
+                                        <Card>
+                                            <p className="text-zinc-300 font-medium">
+                                                Nenhum agendamento pendente de finalização.
+                                            </p>
+
+                                            <p className="text-zinc-500 text-sm mt-1">
+                                                Agendamentos antigos não finalizados aparecerão aqui.
+                                            </p>
+                                        </Card>
+                                    )}
+                                </section>
 
                             <section>
                                 <div className="flex items-center justify-between mb-4">
