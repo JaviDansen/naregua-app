@@ -187,8 +187,10 @@ router.get(
   async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, nome, email
-       FROM usuarios`
+      `SELECT id, nome, email, telefone
+      FROM usuarios
+      WHERE perfil = 'usuario'
+      ORDER BY nome ASC`
     );
 
     return res.status(200).json({
