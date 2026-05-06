@@ -186,6 +186,13 @@ const AdminDashboard = () => {
                 </Link>
 
                 <Link
+                  to="/clients"
+                  className="bg-zinc-800 hover:bg-zinc-700 transition rounded-lg p-3 text-center font-medium"
+                >
+                  Gerenciar Clientes
+                </Link>
+
+                <Link
                   to="/services"
                   className="bg-zinc-800 hover:bg-zinc-700 transition rounded-lg p-3 text-center font-medium"
                 >
