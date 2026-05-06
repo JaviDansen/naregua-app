@@ -20,6 +20,28 @@ const minutesToTime = (totalMinutes) => {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 };
 
+const isTodayDate = (date) => {
+  const today = new Date();
+
+  const todayValue = `${today.getFullYear()}-${String(
+    today.getMonth() + 1
+  ).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  return date === todayValue;
+};
+
+const isSlotInFuture = (slot, date) => {
+  if (!isTodayDate(date)) return true;
+
+  const now = new Date();
+  const slotMinutes = timeToMinutes(slot);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  if (slotMinutes == null) return false;
+
+  return slotMinutes > nowMinutes;
+};
+
 const hasConflict = (slotStart, serviceDuration, occupiedAppointments = []) => {
   const slotStartMinutes = timeToMinutes(slotStart);
   const slotEndMinutes = slotStartMinutes + Number(serviceDuration || 0);
@@ -36,7 +58,12 @@ const hasConflict = (slotStart, serviceDuration, occupiedAppointments = []) => {
   });
 };
 
-const buildDailySlots = ({ openTime, closeTime, serviceDuration, intervalMinutes }) => {
+const buildDailySlots = ({
+  openTime,
+  closeTime,
+  serviceDuration,
+  intervalMinutes,
+}) => {
   const slots = [];
 
   const startMinutes = timeToMinutes(openTime);
@@ -72,6 +99,7 @@ const TimeSlotPicker = ({
     date,
     servicoId: serviceId,
   });
+
   const businessHours = data?.horario_funcionamento;
   const occupiedAppointments = data?.agendamentos_ocupados || [];
   const intervalMinutes = data?.intervalo_base_minutos || 20;
@@ -89,7 +117,9 @@ const TimeSlotPicker = ({
     });
 
     return allSlots.filter(
-      (slot) => !hasConflict(slot, serviceDuration, occupiedAppointments)
+      (slot) =>
+        isSlotInFuture(slot, date) &&
+        !hasConflict(slot, serviceDuration, occupiedAppointments)
     );
   }, [
     date,
