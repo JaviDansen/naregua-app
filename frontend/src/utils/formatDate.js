@@ -120,10 +120,19 @@ export const getTimeInputValueFromIso = (dateString) => {
 export const isPastDateTime = (date, time) => {
   if (!date || !time) return true;
 
-  const selectedDateTime = new Date(`${date}T${time}:00`);
-  const now = new Date();
+  const [year, month, day] = date.split('-').map(Number);
+  const [hour, minute] = time.split(':').map(Number);
 
-  return selectedDateTime.getTime() < now.getTime();
+  const selectedDateTime = new Date(
+    year,
+    month - 1,
+    day,
+    hour,
+    minute,
+    0
+  );
+
+  return selectedDateTime.getTime() < new Date().getTime();
 };
 
 export const formatInputDate = (dateString) => {
