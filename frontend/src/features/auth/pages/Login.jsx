@@ -71,14 +71,34 @@ const Login = () => {
               <label className="text-zinc-400 text-sm font-medium mb-2 block">
                 Email <span className="text-[#e11d48] ml-1">*</span>
               </label>
-              <Input placeholder="seu@email.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-zinc-900/30 border-white/5 h-14" />
+              <Input
+                placeholder="seu@email.com"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError('');
+                }}
+                required
+                className="bg-zinc-900/30 border-white/5 h-14"
+              />
             </div>
 
             <div className="space-y-1">
               <label className="text-zinc-400 text-sm font-medium mb-2 block">
                 Senha <span className="text-[#e11d48] ml-1">*</span>
               </label>
-              <Input placeholder="••••••••" type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required className="bg-zinc-900/30 border-white/5 h-14" />
+              <Input
+                placeholder="••••••••"
+                type="password"
+                value={senha}
+                onChange={(e) => {
+                  setSenha(e.target.value);
+                  setError('');
+                }}
+                required
+                className="bg-zinc-900/30 border-white/5 h-14"
+              />
             </div>
             
             <div className="pt-4">
