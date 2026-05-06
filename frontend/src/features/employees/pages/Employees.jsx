@@ -129,15 +129,9 @@ const Employees = () => {
               {employees.map((employee) => (
                 <Card key={employee.id}>
                   <h3 className="font-semibold">{employee.nome}</h3>
-                  <div className="mt-2">
-                    <p className="text-xs text-zinc-500 uppercase tracking-wide">
-                      Especialidades
-                    </p>
-
-                    <p className="text-zinc-300 mt-1">
-                      {employee.especialidade}
-                    </p>
-                  </div>
+                  <p className="text-zinc-400 mt-1">
+                    Especialidades: {employee.especialidade}
+                  </p>
 
                   {isAdmin && employee.telefone && (
                     <p className="text-zinc-400">{employee.telefone}</p>
