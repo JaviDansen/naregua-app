@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useEmployees,
   useAdminEmployees,
@@ -20,8 +21,10 @@ import { useAuth } from '../../auth/hooks/useAuth';
 import { formatPhone, isValidPhone } from "../../../utils/phone";
 
 const Employees = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.perfil === 'admin';
+  const isUsuario = user?.perfil === 'usuario';
 
   const { data: publicEmployees, isLoading: isLoadingPublic } = useEmployees();
   const { data: adminEmployees, isLoading: isLoadingAdmin } = useAdminEmployees(isAdmin);
@@ -39,6 +42,21 @@ const Employees = () => {
   const [especialidade, setEspecialidade] = useState('');
   const [telefone, setTelefone] = useState('');
   const [feedback, setFeedback] = useState(null);
+
+  const handleEmployeeClick = (employee) => {
+    if (!isUsuario) return;
+
+    navigate(`/appointments/new?employeeId=${employee.id}`);
+  };
+
+  const handleEmployeeKeyDown = (event, employee) => {
+    if (!isUsuario) return;
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleEmployeeClick(employee);
+    }
+  };
 
   const openCreateModal = () => {
     setFeedback(null);
@@ -158,8 +176,16 @@ const Employees = () => {
         <Navbar />
 
         <div className="p-6 pb-20 md:pb-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Funcionários</h1>
+          <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Funcionários</h1>
+
+              {isUsuario && (
+                <p className="mt-2 text-sm text-zinc-400">
+                  Clique em um funcionário para agendar um horário com ele já selecionado.
+                </p>
+              )}
+            </div>
 
             {isAdmin && (
               <Button onClick={openCreateModal}>
@@ -185,7 +211,18 @@ const Employees = () => {
           ) : employees && employees.length > 0 ? (
             <div className="space-y-4">
               {employees.map((employee) => (
-                <Card key={employee.id}>
+                <Card
+                  key={employee.id}
+                  onClick={isUsuario ? () => handleEmployeeClick(employee) : undefined}
+                  onKeyDown={(event) => handleEmployeeKeyDown(event, employee)}
+                  role={isUsuario ? 'button' : undefined}
+                  tabIndex={isUsuario ? 0 : undefined}
+                  className={
+                    isUsuario
+                      ? 'cursor-pointer transition-colors hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40'
+                      : ''
+                  }
+                >
                   <h3 className="font-semibold">{employee.nome}</h3>
                   <p className="text-zinc-400 mt-1">
                     Especialidades: {employee.especialidade}

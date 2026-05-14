@@ -26,6 +26,7 @@ const NewAppointment = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedServiceId = searchParams.get('serviceId');
+  const preselectedEmployeeId = searchParams.get('employeeId');
 
   const { user } = useAuth();
   const isAdmin = user?.perfil === 'admin';
@@ -58,6 +59,7 @@ const NewAppointment = () => {
   const [feedback, setFeedback] = useState(null);
   const navigateTimeoutRef = useRef(null);
   const preselectedServiceAppliedRef = useRef(null);
+  const preselectedEmployeeAppliedRef = useRef(null);
 
   const totalSteps = isAdmin ? 5 : 4;
 
@@ -87,6 +89,11 @@ const NewAppointment = () => {
       )?.duracao
     ) || 30;
 
+  const shouldSkipEmployeeStep =
+    isUsuario &&
+    preselectedEmployeeId &&
+    Number(selectedEmployee) === Number(preselectedEmployeeId);
+
   useEffect(() => {
     setSelectedTime('');
   }, [selectedDate, selectedEmployee, selectedService]);
@@ -103,8 +110,32 @@ const NewAppointment = () => {
 
     preselectedServiceAppliedRef.current = preselectedServiceId;
     setSelectedService(preselectedServiceId);
-    setStep(2);
-  }, [isUsuario, preselectedServiceId, services]);
+    setStep(shouldSkipEmployeeStep ? 3 : 2);
+  }, [isUsuario, preselectedServiceId, services, shouldSkipEmployeeStep]);
+
+  useEffect(() => {
+    if (!isUsuario || !preselectedEmployeeId || !employees?.length) return;
+    if (preselectedEmployeeAppliedRef.current === preselectedEmployeeId) return;
+
+    const employeeExists = employees.some(
+      (employee) => Number(employee.id) === Number(preselectedEmployeeId)
+    );
+
+    if (!employeeExists) return;
+
+    preselectedEmployeeAppliedRef.current = preselectedEmployeeId;
+    setSelectedEmployee(preselectedEmployeeId);
+
+    if (selectedService) {
+      setStep(3);
+    }
+  }, [isUsuario, preselectedEmployeeId, employees, selectedService]);
+
+  useEffect(() => {
+    if (!isAdmin && shouldSkipEmployeeStep && selectedService && step === 2) {
+      setStep(3);
+    }
+  }, [isAdmin, shouldSkipEmployeeStep, selectedService, step]);
 
   useEffect(() => {
     return () => {
@@ -127,10 +158,20 @@ const NewAppointment = () => {
       return;
     }
 
+    if (!isAdmin && step === 1 && shouldSkipEmployeeStep) {
+      setStep(3);
+      return;
+    }
+
     if (step < totalSteps) setStep(step + 1);
   };
 
   const handleBack = () => {
+    if (!isAdmin && step === 3 && shouldSkipEmployeeStep) {
+      setStep(1);
+      return;
+    }
+
     if (step > 1) setStep(step - 1);
   };
 
@@ -141,6 +182,8 @@ const NewAppointment = () => {
     setSelectedEmployee('');
     setSelectedDate('');
     setSelectedTime('');
+    preselectedServiceAppliedRef.current = null;
+    preselectedEmployeeAppliedRef.current = null;
   };
 
   const handleConfirm = async () => {
