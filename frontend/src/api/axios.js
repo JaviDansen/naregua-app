@@ -105,14 +105,26 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => response,
+
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || ''; // URL da requisição atual
+
+    // Verifica se é uma rota pública de autenticação
+    const isAuthRoute =
+      requestUrl.includes('/login') ||
+      requestUrl.includes('/register');
+
+    // Só força logout em rotas protegidas
+    if (error.response?.status === 401 && !isAuthRoute) {
       if (!DEV_MODE) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        localStorage.removeItem('token'); // Remove token inválido
+        localStorage.removeItem('user'); // Remove usuário salvo
+
+        window.location.href = '/login'; // Redireciona para login
       }
     }
-    return Promise.reject(error);
+
+    return Promise.reject(error); // Mantém o erro para tratamento local
   }
 );
 

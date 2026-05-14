@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -14,13 +13,6 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation(); // Captura informações enviadas pela rota anterior
-
-  useEffect(() => {
-    // Limpa o state da navegação após exibir o alerta
-    if (location.state?.message) {
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, []);
 
   const accessMessage = location.state?.message || ''; // Mensagem recebida
   const accessType = location.state?.type || 'warning'; // Tipo do alerta
