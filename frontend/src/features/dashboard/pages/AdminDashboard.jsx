@@ -5,6 +5,7 @@ import Navbar from '../../../components/layout/Navbar';
 import MobileNav from '../../../components/layout/MobileNav';
 import Card from '../../../components/ui/Card';
 import Skeleton from '../../../components/ui/Skeleton';
+import UnitWeatherCard from '../components/UnitWeatherCard';
 
 const AdminDashboard = () => {
   const { data: appointments = [], isLoading } = useAppointments();
@@ -142,6 +143,10 @@ const AdminDashboard = () => {
             <p className="text-zinc-400 mt-1">
               Visão gerencial da barbearia com indicadores de desempenho.
             </p>
+          </div>
+
+          <div className="mb-8">
+            <UnitWeatherCard />
           </div>
 
           {isLoading ? (
