@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useServices,
@@ -14,6 +14,7 @@ import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import Modal from '../../../components/ui/Modal';
+import AlertMessage from '../../../components/ui/AlertMessage';
 import TimeSlotPicker from '../components/TimeSlotPicker';
 import {
   formatInputDate,
@@ -51,6 +52,8 @@ const NewAppointment = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const navigateTimeoutRef = useRef(null);
 
   const totalSteps = isAdmin ? 5 : 4;
 
@@ -84,11 +87,22 @@ const NewAppointment = () => {
     setSelectedTime('');
   }, [selectedDate, selectedEmployee, selectedService]);
 
+  useEffect(() => {
+    return () => {
+      if (navigateTimeoutRef.current) {
+        clearTimeout(navigateTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleNext = () => {
     const dateStep = isAdmin ? 4 : 3;
 
     if (step === dateStep && selectedDate < getMinDateInputValue()) {
-      alert('Não é possível selecionar uma data passada.');
+      setFeedback({
+        type: 'error',
+        message: '❌ Não é possível selecionar uma data passada.',
+      });
       setSelectedDate('');
       setSelectedTime('');
       return;
@@ -102,14 +116,22 @@ const NewAppointment = () => {
   };
 
   const handleConfirm = async () => {
+    setFeedback(null);
+
     try {
       if (isAdmin && !selectedUser) {
-        alert('Selecione o cliente do agendamento.');
+        setFeedback({
+          type: 'error',
+          message: '❌ Selecione o cliente do agendamento.',
+        });
         return;
       }
 
       if (isPastDateTime(selectedDate, selectedTime)) {
-        alert('Selecione uma data e horário futuros para o agendamento.');
+        setFeedback({
+          type: 'error',
+          message: '❌ Selecione uma data e horário futuros para o agendamento.',
+        });
         return;
       }
 
@@ -127,7 +149,15 @@ const NewAppointment = () => {
 
       await createAppointmentMutation.mutateAsync(payload);
 
-      navigate('/dashboard');
+      setIsConfirmModalOpen(false);
+      setFeedback({
+        type: 'success',
+        message: '✅ Agendamento criado com sucesso!',
+      });
+
+      navigateTimeoutRef.current = setTimeout(() => {
+        navigate('/dashboard');
+      }, 1200);
     } catch (error) {
       console.error('Erro ao criar agendamento:', error);
 
@@ -137,7 +167,11 @@ const NewAppointment = () => {
         error.response?.data?.message ||
         'Erro ao criar agendamento.';
 
-      alert(message);
+      setIsConfirmModalOpen(false);
+      setFeedback({
+        type: 'error',
+        message: `❌ ${message}`,
+      });
     }
   };
 
@@ -179,6 +213,14 @@ const NewAppointment = () => {
           <h1 className="text-2xl font-bold mb-6 text-center">
             Novo Agendamento
           </h1>
+
+          {feedback && (
+            <AlertMessage
+              type={feedback.type}
+              message={feedback.message}
+              className="mb-4"
+            />
+          )}
 
           <Card>
             {isAdmin && step === 1 && (

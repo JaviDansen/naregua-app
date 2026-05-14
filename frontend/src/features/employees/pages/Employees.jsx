@@ -15,6 +15,7 @@ import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Modal from "../../../components/ui/Modal";
 import Skeleton from "../../../components/ui/Skeleton";
+import AlertMessage from "../../../components/ui/AlertMessage";
 import { useAuth } from '../../auth/hooks/useAuth';
 import { formatPhone, isValidPhone } from "../../../utils/phone";
 
@@ -37,8 +38,10 @@ const Employees = () => {
   const [nome, setNome] = useState('');
   const [especialidade, setEspecialidade] = useState('');
   const [telefone, setTelefone] = useState('');
+  const [feedback, setFeedback] = useState(null);
 
   const openCreateModal = () => {
+    setFeedback(null);
     setEditingEmployee(null);
     setNome('');
     setEspecialidade('');
@@ -47,6 +50,7 @@ const Employees = () => {
   };
 
   const openEditModal = (employee) => {
+    setFeedback(null);
     setEditingEmployee(employee);
     setNome(employee.nome || '');
     setEspecialidade(employee.especialidade || '');
@@ -63,10 +67,27 @@ const Employees = () => {
   };
 
   const handleSubmit = async () => {
-    if (!nome.trim()) return alert("Informe o nome do funcionário.");
-    if (!especialidade.trim()) return alert("Informe a especialidade do funcionário.");
-    if (!telefone.trim()) return alert("Informe o telefone do funcionário.");
-    if (!isValidPhone(telefone)) return alert("Informe um telefone válido com DDD.");
+    setFeedback(null);
+
+    if (!nome.trim()) {
+      setFeedback({ type: 'error', message: '❌ Informe o nome do funcionário.' });
+      return;
+    }
+
+    if (!especialidade.trim()) {
+      setFeedback({ type: 'error', message: '❌ Informe a especialidade do funcionário.' });
+      return;
+    }
+
+    if (!telefone.trim()) {
+      setFeedback({ type: 'error', message: '❌ Informe o telefone do funcionário.' });
+      return;
+    }
+
+    if (!isValidPhone(telefone)) {
+      setFeedback({ type: 'error', message: '❌ Informe um telefone válido com DDD.' });
+      return;
+    }
 
     const payload = {
       nome: nome.trim(),
@@ -74,16 +95,33 @@ const Employees = () => {
       telefone
     };
 
-    if (editingEmployee) {
-      await updateEmployeeMutation.mutateAsync({
-        id: editingEmployee.id,
-        data: payload
-      });
-    } else {
-      await createEmployeeMutation.mutateAsync(payload);
-    }
+    try {
+      if (editingEmployee) {
+        await updateEmployeeMutation.mutateAsync({
+          id: editingEmployee.id,
+          data: payload
+        });
+      } else {
+        await createEmployeeMutation.mutateAsync(payload);
+      }
 
-    resetForm();
+      const successMessage = editingEmployee
+        ? '✅ Funcionário editado com sucesso!'
+        : '✅ Funcionário criado com sucesso!';
+
+      resetForm();
+      setFeedback({ type: 'success', message: successMessage });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: `❌ ${
+          error.response?.data?.erro ||
+          error.response?.data?.mensagem ||
+          error.response?.data?.message ||
+          'Erro ao salvar funcionário.'
+        }`,
+      });
+    }
   };
 
   const handleDelete = async (employee) => {
@@ -95,8 +133,20 @@ const Employees = () => {
 
     try {
       await deleteEmployeeMutation.mutateAsync(employee.id);
+      setFeedback({
+        type: 'success',
+        message: '✅ Funcionário excluído com sucesso!',
+      });
     } catch (error) {
-      alert(error.response?.data?.erro || "Erro ao excluir funcionário.");
+      setFeedback({
+        type: 'error',
+        message: `❌ ${
+          error.response?.data?.erro ||
+          error.response?.data?.mensagem ||
+          error.response?.data?.message ||
+          'Erro ao excluir funcionário.'
+        }`,
+      });
     }
   };
 
@@ -117,6 +167,14 @@ const Employees = () => {
               </Button>
             )}
           </div>
+
+          {feedback && !isModalOpen && (
+            <AlertMessage
+              type={feedback.type}
+              message={feedback.message}
+              className="mb-4"
+            />
+          )}
 
           {isLoading ? (
             <div className="space-y-4">
@@ -172,6 +230,14 @@ const Employees = () => {
         <h2 className="text-xl font-bold mb-4">
           {editingEmployee ? "Editar Funcionário" : "Adicionar Funcionário"}
         </h2>
+
+        {feedback && (
+          <AlertMessage
+            type={feedback.type}
+            message={feedback.message}
+            className="mb-4"
+          />
+        )}
 
         <Input label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
         <Input label="Especialidade" value={especialidade} onChange={(e) => setEspecialidade(e.target.value)} required />

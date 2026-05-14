@@ -14,6 +14,7 @@ import Button from "../../../components/ui/Button";
 import Input from "../../../components/ui/Input";
 import Modal from "../../../components/ui/Modal";
 import Skeleton from "../../../components/ui/Skeleton";
+import AlertMessage from "../../../components/ui/AlertMessage";
 import ServiceCard from '../components/ServiceCard';
 import { useAuth } from '../../auth/hooks/useAuth';
 
@@ -28,11 +29,13 @@ const Services = () => {
   const [nome, setNome] = useState('');
   const [preco, setPreco] = useState('');
   const [duracao, setDuracao] = useState('');
+  const [feedback, setFeedback] = useState(null);
 
   const { user } = useAuth();
   const isAdmin = user?.perfil === 'admin';
 
   const openCreateModal = () => {
+    setFeedback(null);
     setEditingService(null);
     setNome('');
     setPreco('');
@@ -41,6 +44,7 @@ const Services = () => {
   };
 
   const openEditModal = (service) => {
+    setFeedback(null);
     setEditingService(service);
     setNome(service.nome || '');
     setPreco(String(service.preco || ''));
@@ -57,9 +61,22 @@ const Services = () => {
   };
 
   const handleSubmit = async () => {
-    if (!nome.trim()) return alert("Informe o nome do serviço.");
-    if (!preco || Number(preco) <= 0) return alert("Informe um preço válido.");
-    if (!duracao || Number(duracao) <= 0) return alert("Informe uma duração válida.");
+    setFeedback(null);
+
+    if (!nome.trim()) {
+      setFeedback({ type: 'error', message: '❌ Informe o nome do serviço.' });
+      return;
+    }
+
+    if (!preco || Number(preco) <= 0) {
+      setFeedback({ type: 'error', message: '❌ Informe um preço válido.' });
+      return;
+    }
+
+    if (!duracao || Number(duracao) <= 0) {
+      setFeedback({ type: 'error', message: '❌ Informe uma duração válida.' });
+      return;
+    }
 
     const payload = {
       nome: nome.trim(),
@@ -67,16 +84,33 @@ const Services = () => {
       duracao: parseInt(duracao)
     };
 
-    if (editingService) {
-      await updateServiceMutation.mutateAsync({
-        id: editingService.id,
-        data: payload
-      });
-    } else {
-      await createServiceMutation.mutateAsync(payload);
-    }
+    try {
+      if (editingService) {
+        await updateServiceMutation.mutateAsync({
+          id: editingService.id,
+          data: payload
+        });
+      } else {
+        await createServiceMutation.mutateAsync(payload);
+      }
 
-    resetForm();
+      const successMessage = editingService
+        ? '✅ Serviço editado com sucesso!'
+        : '✅ Serviço criado com sucesso!';
+
+      resetForm();
+      setFeedback({ type: 'success', message: successMessage });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: `❌ ${
+          error.response?.data?.erro ||
+          error.response?.data?.mensagem ||
+          error.response?.data?.message ||
+          'Erro ao salvar serviço.'
+        }`,
+      });
+    }
   };
 
   const handleDelete = async (service) => {
@@ -88,8 +122,20 @@ const Services = () => {
 
     try {
       await deleteServiceMutation.mutateAsync(service.id);
+      setFeedback({
+        type: 'success',
+        message: '✅ Serviço excluído com sucesso!',
+      });
     } catch (error) {
-      alert(error.response?.data?.erro || "Erro ao excluir serviço.");
+      setFeedback({
+        type: 'error',
+        message: `❌ ${
+          error.response?.data?.erro ||
+          error.response?.data?.mensagem ||
+          error.response?.data?.message ||
+          'Erro ao excluir serviço.'
+        }`,
+      });
     }
   };
 
@@ -110,6 +156,14 @@ const Services = () => {
               </Button>
             )}
           </div>
+
+          {feedback && !isModalOpen && (
+            <AlertMessage
+              type={feedback.type}
+              message={feedback.message}
+              className="mb-4"
+            />
+          )}
 
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -160,6 +214,14 @@ const Services = () => {
         <h2 className="text-xl font-bold mb-4">
           {editingService ? "Editar Serviço" : "Adicionar Serviço"}
         </h2>
+
+        {feedback && (
+          <AlertMessage
+            type={feedback.type}
+            message={feedback.message}
+            className="mb-4"
+          />
+        )}
 
         <Input label="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
         <Input label="Preço (R$)" type="number" value={preco} onChange={(e) => setPreco(e.target.value)} required />

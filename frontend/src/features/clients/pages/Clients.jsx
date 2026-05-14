@@ -11,6 +11,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import Modal from '../../../components/ui/Modal';
 import Skeleton from '../../../components/ui/Skeleton';
+import AlertMessage from '../../../components/ui/AlertMessage';
 import { formatPhone, isValidPhone } from '../../../utils/phone';
 
 const Clients = () => {
@@ -22,6 +23,7 @@ const Clients = () => {
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [feedback, setFeedback] = useState(null);
 
   const resetForm = () => {
     setIsModalOpen(false);
@@ -32,11 +34,32 @@ const Clients = () => {
   };
 
   const handleSubmit = async () => {
-    if (!nome.trim()) return alert('Informe o nome do cliente.');
-    if (!telefone.trim()) return alert('Informe o telefone do cliente.');
-    if (!isValidPhone(telefone)) return alert('Informe um telefone válido com DDD.');
-    if (!email.trim()) return alert('Informe o email do cliente.');
-    if (!senha.trim()) return alert('Informe uma senha provisória para o cliente.');
+    setFeedback(null);
+
+    if (!nome.trim()) {
+      setFeedback({ type: 'error', message: '❌ Informe o nome do cliente.' });
+      return;
+    }
+
+    if (!telefone.trim()) {
+      setFeedback({ type: 'error', message: '❌ Informe o telefone do cliente.' });
+      return;
+    }
+
+    if (!isValidPhone(telefone)) {
+      setFeedback({ type: 'error', message: '❌ Informe um telefone válido com DDD.' });
+      return;
+    }
+
+    if (!email.trim()) {
+      setFeedback({ type: 'error', message: '❌ Informe o email do cliente.' });
+      return;
+    }
+
+    if (!senha.trim()) {
+      setFeedback({ type: 'error', message: '❌ Informe uma senha provisória para o cliente.' });
+      return;
+    }
 
     try {
       await createUserMutation.mutateAsync({
@@ -47,12 +70,20 @@ const Clients = () => {
       });
 
       resetForm();
+      setFeedback({
+        type: 'success',
+        message: '✅ Cliente criado com sucesso!',
+      });
     } catch (error) {
-      alert(
-        error.response?.data?.erro ||
+      setFeedback({
+        type: 'error',
+        message: `❌ ${
+          error.response?.data?.erro ||
           error.response?.data?.mensagem ||
+          error.response?.data?.message ||
           'Erro ao cadastrar cliente.'
-      );
+        }`,
+      });
     }
   };
 
@@ -72,10 +103,23 @@ const Clients = () => {
               </p>
             </div>
 
-            <Button onClick={() => setIsModalOpen(true)}>
+            <Button
+              onClick={() => {
+                setFeedback(null);
+                setIsModalOpen(true);
+              }}
+            >
               Adicionar Cliente
             </Button>
           </div>
+
+          {feedback && !isModalOpen && (
+            <AlertMessage
+              type={feedback.type}
+              message={feedback.message}
+              className="mb-4"
+            />
+          )}
 
           {isLoading ? (
             <div className="space-y-4">
@@ -110,6 +154,14 @@ const Clients = () => {
 
       <Modal isOpen={isModalOpen} onClose={resetForm}>
         <h2 className="text-xl font-bold mb-4">Adicionar Cliente</h2>
+
+        {feedback && (
+          <AlertMessage
+            type={feedback.type}
+            message={feedback.message}
+            className="mb-4"
+          />
+        )}
 
         <Input
           label="Nome"

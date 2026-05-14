@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   useServices,
@@ -13,6 +13,7 @@ import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Select from '../../../components/ui/Select';
 import Modal from '../../../components/ui/Modal';
+import AlertMessage from '../../../components/ui/AlertMessage';
 import TimeSlotPicker from '../components/TimeSlotPicker';
 import {
   formatInputDate,
@@ -36,6 +37,8 @@ const EditAppointment = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const navigateTimeoutRef = useRef(null);
 
   const serviceOptions =
     services?.map((s) => ({ value: s.id, label: s.nome, duracao: s.duracao })) || [];
@@ -78,9 +81,20 @@ const EditAppointment = () => {
     }
   }, [appointment, selectedDate, selectedEmployee, selectedService]);
 
+  useEffect(() => {
+    return () => {
+      if (navigateTimeoutRef.current) {
+        clearTimeout(navigateTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleNext = () => {
     if (step === 3 && selectedDate < getMinDateInputValue()) {
-      alert('Não é possível selecionar uma data passada.');
+      setFeedback({
+        type: 'error',
+        message: '❌ Não é possível selecionar uma data passada.',
+      });
       setSelectedDate('');
       setSelectedTime('');
       return;
@@ -94,9 +108,14 @@ const EditAppointment = () => {
   };
 
   const handleConfirm = async () => {
+    setFeedback(null);
+
     try {
       if (isPastDateTime(selectedDate, selectedTime)) {
-        alert('Selecione uma data e horário futuros para o agendamento.');
+        setFeedback({
+          type: 'error',
+          message: '❌ Selecione uma data e horário futuros para o agendamento.',
+        });
         return;
       }
 
@@ -111,7 +130,15 @@ const EditAppointment = () => {
         },
       });
 
-      navigate('/dashboard');
+      setIsConfirmModalOpen(false);
+      setFeedback({
+        type: 'success',
+        message: '✅ Agendamento editado com sucesso!',
+      });
+
+      navigateTimeoutRef.current = setTimeout(() => {
+        navigate('/dashboard');
+      }, 1200);
     } catch (error) {
       console.error('Erro ao atualizar agendamento:', error);
 
@@ -121,7 +148,11 @@ const EditAppointment = () => {
         error.response?.data?.message ||
         'Erro ao atualizar agendamento.';
 
-      alert(message);
+      setIsConfirmModalOpen(false);
+      setFeedback({
+        type: 'error',
+        message: `❌ ${message}`,
+      });
     }
   };
   
@@ -170,6 +201,14 @@ const EditAppointment = () => {
           <h1 className="text-2xl font-bold mb-6 text-center">
             Editar Agendamento
           </h1>
+
+          {feedback && (
+            <AlertMessage
+              type={feedback.type}
+              message={feedback.message}
+              className="mb-4"
+            />
+          )}
 
           <Card>
             {step === 1 && (
