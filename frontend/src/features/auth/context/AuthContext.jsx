@@ -88,12 +88,13 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
+    if (!DEV_MODE) {
+      window.location.replace("/login");
+      return;
+    }
+
     setUser(null);
     setIsAuthenticated(false);
-
-    if (!DEV_MODE) {
-      window.location.href = "/login";
-    }
   };
 
   const getUser = () => user;

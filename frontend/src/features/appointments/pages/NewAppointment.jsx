@@ -115,6 +115,15 @@ const NewAppointment = () => {
     if (step > 1) setStep(step - 1);
   };
 
+  const resetAppointmentForm = () => {
+    setStep(1);
+    setSelectedUser('');
+    setSelectedService('');
+    setSelectedEmployee('');
+    setSelectedDate('');
+    setSelectedTime('');
+  };
+
   const handleConfirm = async () => {
     setFeedback(null);
 
@@ -154,6 +163,11 @@ const NewAppointment = () => {
         type: 'success',
         message: '✅ Agendamento criado com sucesso!',
       });
+
+      if (isAdmin) {
+        resetAppointmentForm();
+        return;
+      }
 
       navigateTimeoutRef.current = setTimeout(() => {
         navigate('/dashboard');
