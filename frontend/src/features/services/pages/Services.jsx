@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useServices,
   useCreateService,
@@ -19,6 +20,7 @@ import ServiceCard from '../components/ServiceCard';
 import { useAuth } from '../../auth/hooks/useAuth';
 
 const Services = () => {
+  const navigate = useNavigate();
   const { data: services, isLoading } = useServices();
   const createServiceMutation = useCreateService();
   const updateServiceMutation = useUpdateService();
@@ -33,6 +35,13 @@ const Services = () => {
 
   const { user } = useAuth();
   const isAdmin = user?.perfil === 'admin';
+  const isUsuario = user?.perfil === 'usuario';
+
+  const handleServiceClick = (service) => {
+    if (!isUsuario) return;
+
+    navigate(`/appointments/new?serviceId=${service.id}`);
+  };
 
   const openCreateModal = () => {
     setFeedback(null);
@@ -175,7 +184,10 @@ const Services = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {services.map((service) => (
                 <div key={service.id}>
-                  <ServiceCard service={service} />
+                  <ServiceCard
+                    service={service}
+                    onClick={isUsuario ? () => handleServiceClick(service) : undefined}
+                  />
 
                   {isAdmin && (
                     <div className="flex gap-2 mt-3">

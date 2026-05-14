@@ -3,6 +3,7 @@ const Card = ({
   className = '',
   padding = 'md',
   hover = false,
+  ...props
 }) => {
   const paddings = {
     sm: 'p-4',
@@ -21,6 +22,7 @@ const Card = ({
         ${hover ? 'hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200' : ''}
         ${className}
       `}
+      {...props}
     >
       {children}
     </div>

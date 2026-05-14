@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useServices,
   useEmployees,
@@ -24,9 +24,12 @@ import {
 
 const NewAppointment = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedServiceId = searchParams.get('serviceId');
 
   const { user } = useAuth();
   const isAdmin = user?.perfil === 'admin';
+  const isUsuario = user?.perfil === 'usuario';
 
   const {
     data: services,
@@ -54,6 +57,7 @@ const NewAppointment = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const navigateTimeoutRef = useRef(null);
+  const preselectedServiceAppliedRef = useRef(null);
 
   const totalSteps = isAdmin ? 5 : 4;
 
@@ -86,6 +90,21 @@ const NewAppointment = () => {
   useEffect(() => {
     setSelectedTime('');
   }, [selectedDate, selectedEmployee, selectedService]);
+
+  useEffect(() => {
+    if (!isUsuario || !preselectedServiceId || !services?.length) return;
+    if (preselectedServiceAppliedRef.current === preselectedServiceId) return;
+
+    const serviceExists = services.some(
+      (service) => Number(service.id) === Number(preselectedServiceId)
+    );
+
+    if (!serviceExists) return;
+
+    preselectedServiceAppliedRef.current = preselectedServiceId;
+    setSelectedService(preselectedServiceId);
+    setStep(2);
+  }, [isUsuario, preselectedServiceId, services]);
 
   useEffect(() => {
     return () => {
