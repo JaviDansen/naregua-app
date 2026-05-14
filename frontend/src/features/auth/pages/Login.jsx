@@ -65,7 +65,7 @@ const Login = () => {
         <div className="flex flex-col justify-center bg-[#0a0a0a] p-8 md:p-12 rounded-3xl border border-white/5 shadow-2xl">
           <div className="mb-10">
             <h3 className="text-3xl font-bold text-white mb-2">Entrar na conta</h3>
-            <p className="text-zinc-500 text-sm">Acesse sua área administrativa.</p>
+            <p className="text-zinc-500 text-sm">Entre para acessar sua barbearia digital.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
