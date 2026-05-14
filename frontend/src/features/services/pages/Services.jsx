@@ -156,8 +156,16 @@ const Services = () => {
         <Navbar />
 
         <div className="p-6 pb-20 md:pb-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Serviços</h1>
+          <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Serviços</h1>
+
+              {isUsuario && (
+                <p className="mt-2 text-sm text-zinc-400">
+                  Clique em um serviço para agendar um horário com ele já selecionado.
+                </p>
+              )}
+            </div>
 
             {isAdmin && (
               <Button onClick={openCreateModal}>

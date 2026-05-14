@@ -57,13 +57,17 @@ export const sortAppointmentsByDate = (appointments = []) => {
   });
 };
 
+export const isFinalAppointmentStatus = (status = '') => {
+  return ['cancelado', 'concluido', 'concluído'].includes(status);
+};
+
 export const sortAppointmentsWithCanceledLast = (appointments = []) => {
   return [...appointments].sort((a, b) => {
-    const isCanceledA = a.status === 'cancelado';
-    const isCanceledB = b.status === 'cancelado';
+    const isFinalStatusA = isFinalAppointmentStatus(a.status);
+    const isFinalStatusB = isFinalAppointmentStatus(b.status);
 
-    if (isCanceledA && !isCanceledB) return 1;
-    if (!isCanceledA && isCanceledB) return -1;
+    if (isFinalStatusA && !isFinalStatusB) return 1;
+    if (!isFinalStatusA && isFinalStatusB) return -1;
 
     const dateA = parseDate(a.data_hora)?.getTime() ?? 0;
     const dateB = parseDate(b.data_hora)?.getTime() ?? 0;
@@ -79,7 +83,7 @@ export const getNextAppointment = (appointments = []) => {
     const date = parseDate(item.data_hora);
 
     if (!date) return false;
-    if (item.status === 'cancelado') return false;
+    if (isFinalAppointmentStatus(item.status)) return false;
 
     return date.getTime() >= now.getTime();
   }) || null;
