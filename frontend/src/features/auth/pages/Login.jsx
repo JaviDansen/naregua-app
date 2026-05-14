@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // Adiciona acesso ao state da navegação
 import { useAuth } from '../hooks/useAuth';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
@@ -12,6 +12,10 @@ const Login = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation(); // Captura informações enviadas pela rota anterior
+
+  const accessMessage = location.state?.message || ''; // Mensagem recebida
+  const accessType = location.state?.type || 'warning'; // Tipo do alerta
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,7 +69,19 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && <p className="text-red-500 text-xs text-center font-bold bg-red-500/10 py-2 rounded-lg">{error}</p>}
+            {/* ALERTA DE ACESSO NEGADO */}
+            {accessMessage && !error && (
+              <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm text-center font-semibold py-3 px-4 rounded-xl">
+                {accessMessage}
+              </div>
+            )}
+
+            {/* ALERTA DE ERRO DE LOGIN */}
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center font-semibold py-3 px-4 rounded-xl">
+                {error}
+              </div>
+            )}
             
             <div className="space-y-1">
               <label className="text-zinc-400 text-sm font-medium mb-2 block">

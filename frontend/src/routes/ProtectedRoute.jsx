@@ -16,8 +16,17 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  return (
+    <Navigate
+      to="/login"
+      replace
+      state={{
+        message: 'Você precisa fazer login ou criar uma conta para acessar esta página.',
+        type: 'warning'
+      }}
+    />
+  );
+}
 
   return children;
 };
