@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { getProfile, updateProfile } from "../../../api/auth.api";
+import { formatPhone } from "../../../utils/phone";
 import Input from "../../../components/ui/Input";
 import Sidebar from "../../../components/layout/Sidebar";
 import Navbar from "../../../components/layout/Navbar";
@@ -37,7 +38,7 @@ const Profile = () => {
   useEffect(() => {
     if (profile) {
       setNome(profile.nome || "");
-      setTelefone(profile.telefone || "");
+      setTelefone(formatPhone(profile.telefone || ""));
     }
   }, [profile]);
 
@@ -143,7 +144,7 @@ const Profile = () => {
                     {isEditing ? (
                       <Input
                         value={telefone}
-                        onChange={(e) => setTelefone(e.target.value)}
+                        onChange={(e) => setTelefone(formatPhone(e.target.value))}
                         placeholder="Digite seu telefone"
                       />
                     ) : (
@@ -176,7 +177,7 @@ const Profile = () => {
                           onClick={() => {
                             setIsEditing(false);
                             setNome(profile?.nome || "");
-                            setTelefone(profile?.telefone || "");
+                            setTelefone(formatPhone(profile?.telefone || ""));
                             setFeedback(null);
                           }}
                         >
