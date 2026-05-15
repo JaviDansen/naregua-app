@@ -61,6 +61,11 @@ const Clients = () => {
       return;
     }
 
+    if (senha.trim().length < 8) {
+      setFeedback({ type: 'error', message: '❌ A senha deve ter no mínimo 8 caracteres.' });
+      return;
+    }
+
     try {
       await createUserMutation.mutateAsync({
         nome: nome.trim(),

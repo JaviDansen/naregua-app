@@ -53,6 +53,10 @@ export const mockHandlers = {
     if (!nome || !email || !senha) {
       throw { response: { data: { erro: 'Todos os campos são obrigatórios' } } };
     }
+
+    if (senha.trim().length < 8) {
+      throw { response: { data: { erro: 'A senha deve ter no mínimo 8 caracteres' } } };
+    }
     
     return {
       dados: {

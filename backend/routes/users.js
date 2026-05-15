@@ -25,6 +25,12 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    if (senha.trim().length < 8) {
+      return res.status(400).json({
+        erro: 'A senha deve ter no mínimo 8 caracteres'
+      });
+    }
+
     const emailNormalizado = email.trim().toLowerCase();
 
     if (perfil === 'usuario' && (!telefone || telefone.trim() === '')) {

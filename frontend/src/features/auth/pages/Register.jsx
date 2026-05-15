@@ -48,6 +48,11 @@ const Register = () => {
       return;
     }
 
+    if (formData.senha.trim().length < 8) {
+      setError('A senha deve ter no mínimo 8 caracteres.');
+      return;
+    }
+
     if (formData.senha !== formData.confirmarSenha) {
       setError('As senhas não coincidem.');
       return;
