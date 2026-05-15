@@ -210,4 +210,47 @@ router.get(
   }
 });
 
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const usuarioId = req.usuario?.id;
+    const { nome, telefone } = req.body;
+
+    if (!usuarioId) {
+      return res.status(401).json({
+        erro: 'Usuário autenticado não identificado'
+      });
+    }
+
+    if (!nome || nome.trim() === '') {
+      return res.status(400).json({
+        erro: 'nome é obrigatório'
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE usuarios
+       SET nome = $1, telefone = $2
+       WHERE id = $3
+       RETURNING id, nome, email, perfil, telefone`,
+      [nome.trim(), telefone ? telefone.trim() : null, usuarioId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        erro: 'Usuário não encontrado'
+      });
+    }
+
+    return res.status(200).json({
+      mensagem: 'Perfil atualizado com sucesso',
+      dados: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Erro no PUT /profile:', error.message);
+    return res.status(500).json({
+      erro: 'Erro ao atualizar perfil do usuário'
+    });
+  }
+});
+
 module.exports = router;
