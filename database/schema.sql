@@ -3,35 +3,13 @@ CREATE EXTENSION IF NOT EXISTS citext;
 CREATE TABLE usuarios (
     id SERIAL PRIMARY KEY,
 
-    nome VARCHAR(100) NOT NULL,
+    nome VARCHAR(100),
 
-    email CITEXT UNIQUE NOT NULL,
+    email CITEXT UNIQUE,
 
     perfil VARCHAR(50) NOT NULL DEFAULT 'usuario',
-    senha TEXT NOT NULL,
-    telefone VARCHAR(20),
-
-    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT usuarios_perfil_check
-    CHECK (perfil IN ('usuario', 'admin')),
-
-    CONSTRAINT usuarios_email_formato_check
-    CHECK (
-        email = TRIM(email)
-        AND email <> ''
-        AND email LIKE '%@%'
-    ),
-
-    CONSTRAINT usuarios_telefone_obrigatorio_check
-    CHECK (
-        perfil = 'admin'
-        OR (
-            perfil = 'usuario'
-            AND telefone IS NOT NULL
-            AND TRIM(telefone) <> ''
-        )
-    )
+    senha TEXT,
+    telefone VARCHAR(20)
 );
 
 CREATE TABLE servicos (
@@ -39,6 +17,17 @@ CREATE TABLE servicos (
     nome VARCHAR(100) NOT NULL,
     preco DECIMAL(10,2) NOT NULL,
     duracao INT NOT NULL
+);
+
+CREATE TABLE business_hours (
+    id SERIAL PRIMARY KEY,
+    day_of_week INT NOT NULL UNIQUE,
+    open_time TIME,
+    close_time TIME,
+    is_closed BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT business_hours_day_of_week_check
+    CHECK (day_of_week >= 0 AND day_of_week <= 6)
 );
 
 CREATE TABLE funcionarios (
