@@ -23,6 +23,18 @@ router.get('/services', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /services:
+ *   get:
+ *     summary: Lista todos os serviços
+ *     tags:
+ *       - Serviços
+ *     responses:
+ *       200:
+ *         description: Lista de serviços retornada
+ */
+
 router.post(
   '/services',
   auth,
@@ -49,6 +61,37 @@ router.post(
     });
   }
 });
+
+/**
+ * @swagger
+ * /services:
+ *   post:
+ *     summary: Cria um novo serviço (admin)
+ *     tags:
+ *       - Serviços
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nome
+ *               - preco
+ *               - duracao
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               preco:
+ *                 type: number
+ *               duracao:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: Serviço criado
+ */
 
 router.put(
   '/services/:id',
@@ -103,6 +146,39 @@ router.put(
   }
 );
 
+/**
+ * @swagger
+ * /services/{id}:
+ *   put:
+ *     summary: Atualiza um serviço por ID (admin)
+ *     tags:
+ *       - Serviços
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               preco:
+ *                 type: number
+ *               duracao:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Serviço atualizado
+ */
+
 router.delete(
   '/services/:id',
   auth,
@@ -155,5 +231,25 @@ router.delete(
     }
   }
 );
+
+/**
+ * @swagger
+ * /services/{id}:
+ *   delete:
+ *     summary: Exclui um serviço por ID (admin)
+ *     tags:
+ *       - Serviços
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Serviço excluído
+ */
 
 module.exports = router;

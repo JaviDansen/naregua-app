@@ -27,6 +27,18 @@ router.get('/employees', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /employees:
+ *   get:
+ *     summary: Lista funcionários (visão pública)
+ *     tags:
+ *       - Funcionários
+ *     responses:
+ *       200:
+ *         description: Lista de funcionários retornada
+ */
+
 router.get(
   '/employees/admin',
   auth,
@@ -54,6 +66,20 @@ router.get(
     }
   }
 );
+
+/**
+ * @swagger
+ * /employees/admin:
+ *   get:
+ *     summary: Lista funcionários (visão admin)
+ *     tags:
+ *       - Funcionários
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de funcionários retornada (admin)
+ */
 
 router.post(
   '/employees',
@@ -104,6 +130,37 @@ router.post(
     }
   }
 );
+
+/**
+ * @swagger
+ * /employees:
+ *   post:
+ *     summary: Cria um funcionário (admin)
+ *     tags:
+ *       - Funcionários
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nome
+ *               - especialidade
+ *               - telefone
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               especialidade:
+ *                 type: string
+ *               telefone:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Funcionário criado
+ */
 
 router.put(
   '/employees/:id',
@@ -166,6 +223,39 @@ router.put(
   }
 );
 
+/**
+ * @swagger
+ * /employees/{id}:
+ *   put:
+ *     summary: Atualiza um funcionário por ID (admin)
+ *     tags:
+ *       - Funcionários
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               especialidade:
+ *                 type: string
+ *               telefone:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Funcionário atualizado
+ */
+
 router.delete(
   '/employees/:id',
   auth,
@@ -218,5 +308,25 @@ router.delete(
     }
   }
 );
+
+/**
+ * @swagger
+ * /employees/{id}:
+ *   delete:
+ *     summary: Exclui um funcionário por ID (admin)
+ *     tags:
+ *       - Funcionários
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Funcionário excluído
+ */
 
 module.exports = router;

@@ -27,4 +27,16 @@ router.get('/business-hours', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /business-hours:
+ *   get:
+ *     summary: Retorna os horários de funcionamento
+ *     tags:
+ *       - Horários de Funcionamento
+ *     responses:
+ *       200:
+ *         description: Horários retornados
+ */
+
 module.exports = router;

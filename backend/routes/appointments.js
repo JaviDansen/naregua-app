@@ -260,6 +260,36 @@ router.post("/appointments", auth, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /appointments:
+ *   post:
+ *     summary: Cria um agendamento
+ *     tags:
+ *       - Agendamentos
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               usuario_id:
+ *                 type: integer
+ *               servico_id:
+ *                 type: integer
+ *               funcionario_id:
+ *                 type: integer
+ *               data_hora:
+ *                 type: string
+ *                 description: Data e hora no formato YYYY-MM-DDTHH:MM
+ *     responses:
+ *       201:
+ *         description: Agendamento criado
+ */
+
 // Listar agendamentos
 router.get(
   "/appointments",
@@ -317,6 +347,20 @@ router.get(
     }
   },
 );
+
+/**
+ * @swagger
+ * /appointments:
+ *   get:
+ *     summary: Lista todos os agendamentos (admin)
+ *     tags:
+ *       - Agendamentos
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de agendamentos retornada
+ */
 
 // Cancelar agendamento
 router.put("/appointments/:id/cancel", auth, async (req, res) => {
@@ -388,6 +432,26 @@ router.put("/appointments/:id/cancel", auth, async (req, res) => {
     });
   }
 });
+
+/**
+ * @swagger
+ * /appointments/{id}/cancel:
+ *   put:
+ *     summary: Cancela um agendamento
+ *     tags:
+ *       - Agendamentos
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Agendamento cancelado
+ */
 
 // Editar agendamento
 router.put("/appointments/:id", auth, async (req, res) => {
@@ -575,6 +639,39 @@ router.put("/appointments/:id", auth, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /appointments/{id}:
+ *   put:
+ *     summary: Edita um agendamento
+ *     tags:
+ *       - Agendamentos
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               servico_id:
+ *                 type: integer
+ *               funcionario_id:
+ *                 type: integer
+ *               data_hora:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Agendamento atualizado
+ */
+
 // Meus agendamentos
 router.get("/my-appointments", auth, async (req, res) => {
   const usuario_id = req.usuario.id;
@@ -621,6 +718,20 @@ router.get("/my-appointments", auth, async (req, res) => {
     });
   }
 });
+
+/**
+ * @swagger
+ * /my-appointments:
+ *   get:
+ *     summary: Lista agendamentos do usuário autenticado
+ *     tags:
+ *       - Agendamentos
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de agendamentos do usuário
+ */
 
 // Disponibilidade Funcionário + Data + Serviço
 router.get("/availability", auth, async (req, res) => {
@@ -761,6 +872,36 @@ router.get("/availability", auth, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /availability:
+ *   get:
+ *     summary: Retorna disponibilidade de um funcionário em uma data para um serviço
+ *     tags:
+ *       - Agendamentos
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: funcionario_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: data
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: servico_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Disponibilidade retornada
+ */
+
 // Deletar agendamento (hard delete - apenas admin)
 router.delete(
   "/appointments/:id",
@@ -811,6 +952,26 @@ router.delete(
     }
   },
 );
+
+/**
+ * @swagger
+ * /appointments/{id}:
+ *   delete:
+ *     summary: Deleta um agendamento por ID (admin)
+ *     tags:
+ *       - Agendamentos
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Agendamento deletado
+ */
 
 // Marcar agendamento como "concluido"
 router.put(
@@ -890,6 +1051,26 @@ router.put(
   },
 );
 
+/**
+ * @swagger
+ * /appointments/{id}/complete:
+ *   put:
+ *     summary: Marca agendamento como concluído (admin)
+ *     tags:
+ *       - Agendamentos
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Agendamento concluído
+ */
+
 // Marcar agendamento como "faltou"
 router.put(
   "/appointments/:id/no-show",
@@ -967,5 +1148,25 @@ router.put(
     }
   },
 );
+
+/**
+ * @swagger
+ * /appointments/{id}/no-show:
+ *   put:
+ *     summary: Marca agendamento como faltou (admin)
+ *     tags:
+ *       - Agendamentos
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Agendamento marcado como falta
+ */
 
 module.exports = router;

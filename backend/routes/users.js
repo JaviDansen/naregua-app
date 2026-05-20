@@ -9,6 +9,94 @@ const authorize = require('../middlewares/role');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 
+/**
+ * @swagger
+ * /users/register:
+ *   post:
+ *     summary: Registrar novo usuário
+ *     description: Cria uma nova conta de usuário no sistema. Senhas devem ter no mínimo 8 caracteres.
+ *     tags:
+ *       - Autenticação
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nome
+ *               - email
+ *               - senha
+ *               - telefone
+ *             properties:
+ *               nome:
+ *                 type: string
+ *                 description: Nome completo do usuário
+ *                 example: João Silva
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email único do usuário
+ *                 example: joao@example.com
+ *               senha:
+ *                 type: string
+ *                 format: password
+ *                 description: Senha com no mínimo 8 caracteres
+ *                 example: senha123456
+ *               telefone:
+ *                 type: string
+ *                 description: Número de telefone (obrigatório para clientes)
+ *                 example: "11987654321"
+ *               perfil:
+ *                 type: string
+ *                 enum: [usuario, admin]
+ *                 default: usuario
+ *                 description: Papel do usuário no sistema
+ *     responses:
+ *       201:
+ *         description: Usuário registrado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensagem:
+ *                   type: string
+ *                   example: Usuário cadastrado com sucesso
+ *                 dados:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     nome:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     perfil:
+ *                       type: string
+ *       400:
+ *         description: Dados inválidos ou incompletos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 erro:
+ *                   type: string
+ *                   example: "nome, email e senha são obrigatórios"
+ *       409:
+ *         description: Email já cadastrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 erro:
+ *                   type: string
+ *                   example: "Email já cadastrado"
+ *       500:
+ *         description: Erro interno do servidor
+ */
 router.post('/register', async (req, res) => {
   const {
     nome,
@@ -86,6 +174,87 @@ router.post('/register', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /users/login:
+ *   post:
+ *     summary: Fazer login
+ *     description: Autentica um usuário e retorna um token JWT válido por 1 hora
+ *     tags:
+ *       - Autenticação
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - senha
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email do usuário cadastrado
+ *                 example: joao@example.com
+ *               senha:
+ *                 type: string
+ *                 format: password
+ *                 description: Senha do usuário
+ *                 example: senha123456
+ *     responses:
+ *       200:
+ *         description: Login realizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensagem:
+ *                   type: string
+ *                   example: Login realizado com sucesso
+ *                 dados:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       description: Token JWT para usar em requisições autenticadas
+ *                       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                     usuario:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         nome:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         perfil:
+ *                           type: string
+ *       400:
+ *         description: Email ou senha não fornecidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 erro:
+ *                   type: string
+ *                   example: "email e senha são obrigatórios"
+ *       401:
+ *         description: Email ou senha inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 erro:
+ *                   type: string
+ *                   example: "Email ou senha inválidos"
+ *       500:
+ *         description: Erro interno do servidor
+ */
 router.post('/login', async (req, res) => {
   const { email, senha } = req.body;
 
@@ -186,6 +355,22 @@ router.get('/profile', auth, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /users/profile:
+ *   get:
+ *     summary: Retorna o perfil do usuário autenticado
+ *     tags:
+ *       - Usuários
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil obtido com sucesso
+ *       401:
+ *         description: Não autenticado
+ */
+
 router.get(
   '/users',
   auth,
@@ -209,6 +394,24 @@ router.get(
     });
   }
 });
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Lista usuários do tipo cliente (admin)
+ *     tags:
+ *       - Usuários
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de usuários retornada
+ *       401:
+ *         description: Não autenticado
+ *       403:
+ *         description: Acesso negado
+ */
 
 router.put('/profile', auth, async (req, res) => {
   try {
@@ -252,5 +455,34 @@ router.put('/profile', auth, async (req, res) => {
     });
   }
 });
+
+/**
+ * @swagger
+ * /users/profile:
+ *   put:
+ *     summary: Atualiza o perfil do usuário autenticado
+ *     tags:
+ *       - Usuários
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               telefone:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Perfil atualizado com sucesso
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Não autenticado
+ */
 
 module.exports = router;
