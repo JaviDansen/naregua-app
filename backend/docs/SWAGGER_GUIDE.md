@@ -280,3 +280,33 @@ Formatos especiais:
 - `date-time` - data e hora (ISO 8601)
 - `uuid` - identificador único
 - `binary` - arquivo binário
+
+## Publicar a documentação no GitHub (GitHub Pages)
+
+Você pode publicar uma versão estática do Swagger UI no GitHub Pages para que a documentação apareça diretamente no GitHub. Passos resumidos:
+
+1. Gere o arquivo `swagger.json` estático (vai para `docs/swagger-ui/swagger.json`):
+
+```bash
+cd backend
+npm install
+npm run export-swagger
+```
+
+2. O comando acima cria (ou atualiza) `docs/swagger-ui/swagger.json` no repositório. Commit e faça push dessas mudanças:
+
+```bash
+git add docs/swagger-ui/swagger.json
+git commit -m "docs: export Swagger JSON for GitHub Pages"
+git push
+```
+
+3. Habilite o GitHub Pages nas configurações do repositório: escolha publicar a partir da branch `main` (ou `master`) e a pasta `/docs`.
+
+4. Acesse a URL pública (normalmente): `https://<seu-usuario>.github.io/naregua-app/swagger-ui/`
+
+Observações:
+- O arquivo estático `swagger.json` é gerado a partir da configuração/JSdoc atual do backend. Rode o `npm run export-swagger` sempre que atualizar os comentários JSDoc nas rotas.
+- Você também pode customizar `docs/swagger-ui/index.html` (já incluído no repositório) para ajustar cores, título ou opções do Swagger UI.
+
+Se preferir não colocar o `swagger.json` no repositório, é possível apontar o `index.html` para o `raw.githubusercontent.com` apontando para o `swagger.json` gerado em outra branch ou pipeline, mas isso exige passos adicionais de CI/CD.

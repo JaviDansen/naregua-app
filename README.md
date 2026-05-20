@@ -65,3 +65,26 @@ Projeto desenvolvido para disciplina acadêmica com foco em:
 # 📌 Status do Projeto
 
 🚧 Em desenvolvimento
+
+---
+
+## 📚 Documentação (Swagger)
+
+- Documentação interativa local: `http://localhost:3000/api-docs` (executando o backend)
+- Para publicar uma versão estática da documentação no GitHub Pages:
+
+1. No diretório `backend`, gere o JSON estático:
+
+```bash
+cd backend
+npm install
+npm run export-swagger
+```
+
+2. Commit e push dos arquivos gerados em `docs/swagger-ui`.
+
+3. Habilite o GitHub Pages nas configurações do repositório (publishing source: branch `main`, pasta `/docs`).
+
+4. A URL pública típica ficará em: `https://<seu-usuario>.github.io/naregua-app/swagger-ui/` (substitua `<seu-usuario>` pelo seu usuário GitHub).
+
+Observação: rode `npm run export-swagger` sempre que atualizar comentários JSDoc nas rotas para manter a documentação sincronizada.
